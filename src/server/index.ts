@@ -1,4 +1,4 @@
-import type { OxAccountRole, OxAccountUserMetadata } from 'ox_core';
+import type { OxAccountRole, OxAccountUserMetadata } from 'types/index';
 import { CreateAccount, GetAccount, GetCharacterAccount, GetPlayer } from 'ox_core/server';
 import { onClientCallback, versionCheck, checkDependency } from '@communityox/ox_lib/server';
 import { oxmysql } from '@communityox/oxmysql';
