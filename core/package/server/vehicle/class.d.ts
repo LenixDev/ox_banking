@@ -1,0 +1,54 @@
+import { ClassInterface } from 'classInterface';
+import { type VehicleProperties } from '@communityox/ox_lib';
+import type { Dict, VehicleData } from '../../types';
+import { Vector3 } from '@nativewrappers/server';
+export type Vec3 = number[] | {
+    x: number;
+    y: number;
+    z: number;
+} | {
+    buffer: any;
+};
+export declare class OxVehicle extends ClassInterface {
+    #private;
+    script: string;
+    plate: string;
+    model: string;
+    make: string;
+    id?: number;
+    vin: string;
+    owner?: number;
+    group?: string;
+    entity?: number;
+    netId?: number;
+    protected static members: Dict<OxVehicle>;
+    protected static keys: Dict<Dict<OxVehicle>>;
+    static spawn(model: string, coords: Vector3, heading?: number): number;
+    static get(vin: string): OxVehicle | Promise<OxVehicle | undefined>;
+    static getFromVehicleId(vehicleId: number): OxVehicle;
+    static getFromNetId(id: number): OxVehicle;
+    static getFromEntity(entityId: number): OxVehicle;
+    private filter;
+    static getFromFilter(filter: Dict<any>): OxVehicle | undefined;
+    static getAll(filter?: Dict<any>, asArray?: false): Dict<OxVehicle>;
+    static getAll(filter?: Dict<any>, asArray?: true): OxVehicle[];
+    static generateVin({ make, name }: VehicleData, isOwned?: boolean): Promise<string>;
+    static generatePlate(pattern?: string): Promise<string>;
+    static saveAll(resource?: string): void;
+    constructor(vin: string, script: string, plate: string, model: string, make: string, stored: string | null, metadata: Dict<any>, properties: Partial<VehicleProperties>, id?: number, owner?: number, group?: string);
+    set(key: string, value: any): void;
+    get(key: string): any;
+    getState(): StateBagInterface | null;
+    getStored(): string | null;
+    getProperties(): Partial<VehicleProperties>;
+    save(): Promise<number> | Promise<import("mariadb/*").UpsertResult | import("mariadb/*").UpsertResult[]> | undefined;
+    despawn(save?: boolean): void;
+    delete(): void;
+    remove(): void;
+    setStored(value: string | null, despawn?: boolean): void;
+    setOwner(charId?: number): void;
+    setGroup(group?: string): void;
+    setPlate(plate: string): void;
+    setProperties(properties: Partial<VehicleProperties>, apply?: boolean): void;
+    respawn(coords?: Vec3, rotation?: Vector3 | number): number | null;
+}

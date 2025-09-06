@@ -1,0 +1,32 @@
+import type { Character, Dict, OxStatus, CharacterLicense, OxLicense, BanDetails } from '../../types';
+export declare function GetUserIdFromIdentifier(identifier: string, offset?: number): Promise<number | null>;
+export declare function CreateUser(username: string, { license2, steam, fivem, discord }: Dict<string>): Promise<number>;
+export declare function IsStateIdAvailable(stateId: string): Promise<boolean>;
+export declare function CreateCharacter(userId: number, stateId: string, firstName: string, lastName: string, gender: string, date: number, phoneNumber?: number): Promise<number>;
+export declare function GetCharacters(userId: number): Promise<Character[]>;
+export declare function SaveCharacterData(values: any[] | any[][], batch?: boolean): Promise<number> | Promise<import("mariadb/*").UpsertResult | import("mariadb/*").UpsertResult[]>;
+export declare function DeleteCharacter(charId: number): Promise<boolean>;
+export declare function GetCharacterMetadata(charId: number): Promise<{
+    isDead: number;
+    gender: string;
+    dateOfBirth: string;
+    phoneNumber: string;
+    health: number;
+    armour: number;
+    statuses: Dict<number>;
+} | null>;
+export declare function GetStatuses(): Promise<OxStatus[]>;
+export declare function GetLicenses(): Promise<Dict<OxLicense>[]>;
+export declare function GetLicense(name: string): Promise<OxLicense | null>;
+export declare function GetCharacterLicenses(charId: number): Promise<{
+    name: string;
+    data: CharacterLicense;
+}[]>;
+export declare function AddCharacterLicense(charId: number, name: string, data: CharacterLicense): Promise<number>;
+export declare function RemoveCharacterLicense(charId: number, name: string): Promise<number>;
+export declare function UpdateCharacterLicense(charId: number, name: string, key: string, value: any): Promise<number>;
+export declare function GetCharIdFromStateId(stateId: string): Promise<number | null>;
+export declare function UpdateUserTokens(userId: number, tokens: string[]): Promise<void>;
+export declare function IsUserBanned(userId: number): Promise<BanDetails | undefined>;
+export declare function BanUser(userId: number, reason?: string, hours?: number): Promise<boolean>;
+export declare function UnbanUser(userId: number): Promise<number>;
