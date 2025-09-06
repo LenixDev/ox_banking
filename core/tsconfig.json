@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": ".",
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "module": "es2022",
+    "target": "es2023",
+    "lib": ["es2023", "esnext.disposable"],
+    "types": ["@citizenfx/client", "@citizenfx/server"],
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowUnreachableCode": false,
+    "strictFunctionTypes": true,
+    "moduleResolution": "bundler",
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "removeComments": true,
+    "outDir": "./package/"
+  },
+  "include": ["./", "./types/"],
+  "references": [{ "path": "./lib" }]
+}
