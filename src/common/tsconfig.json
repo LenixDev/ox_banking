@@ -4,11 +4,7 @@
     "baseUrl": "./",
     "paths": {
       "~/*": ["../../*"],
-      "@common/*": ["../common/*"],
-      "ox_core": ["../ox_core/lib"],
-      "ox_core/client": ["../ox_core/lib/client"],
-      "ox_core/server": ["../ox_core/lib/server"],
-      "types/*": ["../ox_core/types/*"]
+      "@common/*": ["../common/*"]
     },
     "types": ["@types/node", "@citizenfx/server", "@citizenfx/client"]
   },
