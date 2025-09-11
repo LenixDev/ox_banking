@@ -38,7 +38,7 @@
     "@citizenfx/server": "latest",
     "@communityox/fx-utils": "^0.0.4",
     "@types/node": "^22.13.10",
-    "esbuild": "^0.23.1",
+    "esbuild": "^0.25.9",
     "tsc-alias": "^1.8.11",
     "typescript": "^5.8.2"
   },
