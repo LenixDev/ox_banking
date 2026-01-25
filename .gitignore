@@ -4,3 +4,4 @@ node_modules
 /.yarn.installed
 .idea
 pnpm-lock.yaml
+package-lock.json
