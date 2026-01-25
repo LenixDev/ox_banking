@@ -1,5 +1,5 @@
 import type { OxAccountRole, OxAccountUserMetadata } from '@communityox/ox_core';
-import { CreateAccount, GetAccount, GetCharacterAccount, GetPlayer } from './core';
+import { CreateAccount, GetAccount, GetCharacterAccount, GetPlayer } from './lib';
 import { onClientCallback, versionCheck, checkDependency } from '@communityox/ox_lib/server';
 import { oxmysql } from '@communityox/oxmysql';
 import type { DateRange } from 'react-day-picker';
