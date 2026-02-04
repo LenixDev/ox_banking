@@ -3,6 +3,7 @@ import { CreateNewAccount } from './account';
 import { GetCharIdFromStateId, SelectDefaultAccountId } from './db';
 import { OxAccountMetadata, OxAccountPermissions, OxAccountRole } from '@communityox/ox_core';
 import { TransferAccountBalance } from './types';
+import { oxmysql } from '@communityox/oxmysql';
 
 class AccountInterface {
   constructor(public accountId: number) {}
@@ -60,3 +61,23 @@ export async function GetCharacterAccount(id: number | string) {
 export const GetPlayer = (id: string | number) => {
   return ClassInterface.get(id)
 }
+
+oxmysql.query(`
+  CREATE TABLE account_roles (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL DEFAULT '',
+    deposit TINYINT(1) NOT NULL DEFAULT '0',
+    withdraw TINYINT(1) NOT NULL DEFAULT '0',
+    addUser TINYINT(1) NOT NULL DEFAULT '0',
+    removeUser TINYINT(1) NOT NULL DEFAULT '0',
+    manageUser TINYINT(1) NOT NULL DEFAULT '0',
+    transferOwnership TINYINT(1) NOT NULL DEFAULT '0',
+    viewHistory TINYINT(1) NOT NULL DEFAULT '0',
+    manageAccount TINYINT(1) NOT NULL DEFAULT '0',
+    closeAccount TINYINT(1) NOT NULL DEFAULT '0',
+    sendInvoice TINYINT(1) NOT NULL DEFAULT '0',
+    payInvoice TINYINT(1) NOT NULL DEFAULT '0',
+    PRIMARY KEY (id),
+    UNIQUE INDEX name (name)
+  );
+`)
