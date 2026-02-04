@@ -63,7 +63,7 @@ export const GetPlayer = (id: string | number) => {
 }
 
 oxmysql.query(`
-  CREATE TABLE account_roles (
+  CREATE TABLE IF NOT EXISTS account_roles (
     id INT(11) NOT NULL AUTO_INCREMENT,
     name VARCHAR(50) NOT NULL DEFAULT '',
     deposit TINYINT(1) NOT NULL DEFAULT '0',
