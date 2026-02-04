@@ -2,7 +2,7 @@ import { GetGroup, OxAccountPermissions, OxAccountRole } from "@communityox/ox_c
 import { Connection, db, GetConnection, SelectAccount } from "./db";
 import { getRandomInt } from '@communityox/ox_lib';
 import locales from "./common";
-import { OxPlayer } from "./class";
+import { OxAccount, OxPlayer } from "./class";
 import { OxAccountMetadataRow } from "./types";
 
 const doesAccountExist = 'SELECT 1 FROM accounts WHERE id = ?';
@@ -287,3 +287,133 @@ async function LoadRoles() {
 }
 
 setImmediate(LoadRoles);
+
+export async function UpdateBalance(
+  accountId: number,
+  amount: number,
+  action: 'add' | 'remove',
+  overdraw: boolean,
+  message?: string,
+  note?: string,
+  actorId?: number,
+): Promise<{ success: boolean; message?: string }> {
+  amount = Number.parseInt(String(amount));
+
+  if (isNaN(amount)) return { success: false, message: 'amount_not_number' };
+
+  if (amount <= 0) return { success: false, message: 'invalid_amount' };
+
+  using conn = await GetConnection();
+  const balance = await conn.scalar<number>(getBalance, [accountId]);
+
+  if (balance === null)
+    return {
+      success: false,
+      message: 'no_balance',
+    };
+
+  const addAction = action === 'add';
+  const success = addAction
+    ? await conn.update(addBalance, [amount, accountId])
+    : await conn.update(overdraw ? removeBalance : safeRemoveBalance, [amount, accountId, amount]);
+  if (!success)
+    return {
+      success: false,
+      message: 'insufficient_balance',
+    };
+
+  !message && (message = locales(action === 'add' ? 'deposit' : 'withdraw'));
+
+  const didUpdate =
+    (await conn.update(addTransaction, [
+      actorId || null,
+      addAction ? null : accountId,
+      addAction ? accountId : null,
+      amount,
+      message,
+      note,
+      addAction ? null : balance - amount,
+      addAction ? balance + amount : null,
+    ])) === 1;
+
+  if (!didUpdate)
+    return {
+      success: false,
+      message: 'something_went_wrong',
+    };
+
+  emit('ox:updatedBalance', { accountId, amount, action });
+
+  return { success: true };
+}
+
+export async function UpdateInvoice(
+  invoiceId: number,
+  charId: number,
+): Promise<{ success: boolean; message?: string }> {
+  const player = OxPlayer.getFromCharId(charId);
+
+  if (!player?.charId) return { success: false, message: 'no_charId' };
+
+  const invoice = await db.row<{ amount: number; payerId?: number; fromAccount: number; toAccount: number }>(
+    'SELECT * FROM `accounts_invoices` WHERE `id` = ?',
+    [invoiceId],
+  );
+
+  if (!invoice) return { success: false, message: 'no_invoice' };
+
+  if (invoice.payerId) return { success: false, message: 'invoice_paid' };
+
+  const account = await OxAccount.get(invoice.toAccount);
+  const hasPermission = await account?.playerHasPermission(player.source as number, 'payInvoice');
+
+  if (!hasPermission) return { success: false, message: 'no_permission' };
+
+  const updateReceiver = await UpdateBalance(
+    invoice.toAccount,
+    invoice.amount,
+    'remove',
+    false,
+    locales('invoice_payment'),
+    undefined,
+    charId,
+  );
+
+  if (!updateReceiver.success) return { success: false, message: 'no_balance' };
+
+  const updateSender = await UpdateBalance(
+    invoice.fromAccount,
+    invoice.amount,
+    'add',
+    false,
+    locales('invoice_payment'),
+    undefined,
+    charId,
+  );
+
+  if (!updateSender.success) return { success: false, message: 'no_balance' };
+
+  const invoiceUpdated = await db.update('UPDATE `accounts_invoices` SET `payerId` = ?, `paidAt` = ? WHERE `id` = ?', [
+    player.charId,
+    new Date(),
+    invoiceId,
+  ]);
+
+  if (!invoiceUpdated)
+    return {
+      success: false,
+      message: 'invoice_not_updated',
+    };
+
+  invoice.payerId = charId;
+
+  emit('ox:invoicePaid', invoice);
+
+  return {
+    success: true,
+  };
+}
+
+export function PayAccountInvoice(invoiceId: number, charId: number) {
+  return UpdateInvoice(invoiceId, charId);
+}
