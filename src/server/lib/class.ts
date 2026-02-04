@@ -26,7 +26,16 @@ export class ClassInterface {
       });
     }
 
-    onNet('QBCore:Server:OnPlayerLoaded', () => this.members[source] = new OxPlayer(source))
+    onNet('QBCore:Server:OnPlayerLoaded', async () => {
+      const src = source
+      const { PlayerData: { cid } }: {
+        PlayerData: {
+          cid: number
+        }
+      } = await exports.qbx_core.GetPlayer(src)
+      const player = new OxPlayer(src, cid)
+      this.members[src] = player;
+    });
 
     const name = this.name;
     DEV: console.info(`Instantiated ClassInterface<${name}>`);
@@ -77,10 +86,12 @@ export class OxPlayer extends ClassInterface {
     return this.members[id];
   }
 
-  constructor(source: number) {
+  constructor(source: number, charId?: number) {
     super();
     this.source = source;
     this.#groups = {};
+    this.charId = charId;
+
   }
 
   /** Returns the current grade of a given group name, or the first matched name and grade in the filter. */
