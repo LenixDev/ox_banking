@@ -26,6 +26,11 @@ export class ClassInterface {
       });
     }
 
+    on('QBCore:Server:OnPlayerLoaded', () => {
+      this.members[source] = new OxPlayer(source);
+      console.info(`OxPlayer<${source}> loaded.`);
+    })
+
     const name = this.name;
     DEV: console.info(`Instantiated ClassInterface<${name}>`);
 
