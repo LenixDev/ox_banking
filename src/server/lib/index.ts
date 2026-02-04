@@ -1,4 +1,4 @@
-import { ClassInterface, OxAccount, OxPlayer } from './class';
+import { OxAccount, OxPlayer } from './class';
 import { CreateNewAccount } from './account';
 import { GetCharIdFromStateId, SelectDefaultAccountId } from './db';
 import { OxAccountMetadata, OxAccountPermissions, OxAccountRole } from '@communityox/ox_core';
@@ -57,6 +57,7 @@ export async function GetCharacterAccount(id: number | string) {
   const accountId = charId && (await SelectDefaultAccountId('owner', charId));
   return accountId ? OxAccount.get(accountId) : null;
 }
+
 class PlayerInterface {
   public state: StateBagInterface;
 
@@ -105,9 +106,7 @@ function CreatePlayerInstance(player?: OxPlayer) {
   ) as OxPlayer & PlayerInterface;
 }
 
-export const GetPlayer = (id: string | number) => {
-  return CreatePlayerInstance(ClassInterface.get(id))
-}
+export const GetPlayer = (id: string | number) => CreatePlayerInstance(OxPlayer.get(id))
 
 setImmediate(async () => {
 
