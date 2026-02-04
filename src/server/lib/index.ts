@@ -22,8 +22,16 @@ export const CreateAccount = async (owner: number | string, label: string) => {
 
 export const GetAccount = async (accountId: number) => {
   const Ox = await OxAccount.get(accountId);
+  function get<T extends keyof OxAccountMetadata>(key: T): Promise<OxAccountMetadata[T]>;
+  function get<T extends keyof OxAccountMetadata>(keys: T[]): Promise<Pick<OxAccountMetadata, T>>;
+  function get<T extends keyof OxAccountMetadata>(keys: T | T[]) {
+    if (Array.isArray(keys)) {
+      return Ox.get(keys) as Promise<Pick<OxAccountMetadata, T>>;
+    }
+    return Ox.get(keys) as Promise<OxAccountMetadata[T]>;
+  }
   return {
-    get: <T extends keyof OxAccountMetadata>(key: number | T | T[]): Promise<OxAccount | OxAccountMetadata[T] | Pick<OxAccountMetadata, T>> => Ox.get(key as any),
+    get,
     playerHasPermission: (playerId: number, permission: keyof OxAccountPermissions) => Ox.playerHasPermission(playerId, permission),
     deleteAccount: () => Ox.deleteAccount(),
     depositMoney: (playerId: number, amount: number, message?: string, note?: string) => Ox.depositMoney(playerId, amount, message, note),
