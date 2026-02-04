@@ -1,4 +1,6 @@
-import { Dict } from "@communityox/ox_core"
+import { Dict, OxAccountPermissions, OxAccountRole } from "@communityox/ox_core"
+
+export type OxAccountMetadataRow = OxAccountPermissions & { id?: number; name?: OxAccountRole };
 
 export interface TransferAccountBalance {
   toId: number;

@@ -3,6 +3,7 @@ import { Connection, db, GetConnection, SelectAccount } from "./db";
 import { getRandomInt } from '@communityox/ox_lib';
 import locales from "./common";
 import { OxPlayer } from "./class";
+import { OxAccountMetadataRow } from "./types";
 
 const doesAccountExist = 'SELECT 1 FROM accounts WHERE id = ?';
 const addBalance = 'UPDATE accounts SET balance = balance + ? WHERE id = ?';
@@ -267,3 +268,22 @@ export async function CanPerformAction(
 
   return false;
 }
+
+async function LoadRoles() {
+  const roles = await db.execute<OxAccountMetadataRow>('SELECT * FROM account_roles');
+
+  if (!roles[0]) return;
+
+  roles.forEach((role) => {
+    const roleName = (role.name as string).toLowerCase() as OxAccountRole;
+    delete role.name;
+    delete role.id;
+
+    accountRoles[roleName] = role;
+    GlobalState[`accountRole.${roleName}`] = role;
+  });
+
+  GlobalState['accountRoles'] = Object.keys(accountRoles);
+}
+
+setImmediate(LoadRoles);
