@@ -1,6 +1,5 @@
-import { SelectAccount, SetAccountType } from './db'
-
-type Dict<T> = { [key: string]: T };
+import { Dict } from '@communityox/ox_core';
+import { GetCharIdFromStateId, SelectAccount, SelectAccountRole, SetAccountType } from './db'
 
 export class ClassInterface {
   protected static members: Dict<any>;
@@ -49,5 +48,13 @@ export class OxAccount extends ClassInterface {
 
   async setShared() {
     return SetAccountType(this.accountId, 'shared');
+  }
+
+  /**
+   * Get the account access role of a character by charId or stateId.
+   */
+  async getCharacterRole(id: number | string) {
+    const charId = typeof id === 'string' ? await GetCharIdFromStateId(id) : id;
+    return charId ? SelectAccountRole(this.accountId, charId) : null;
   }
 }
