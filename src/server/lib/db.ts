@@ -64,6 +64,9 @@ export const db = {
   async update(query: string | QueryOptions, values?: any[]) {
     return (await db.execute<OkPacket>(query, values))?.affectedRows;
   },
+  async row<T>(query: string | QueryOptions, values?: any[]) {
+    return db.single(await db.execute<T[]>(query, values)) as T | null;
+  },
   scalar<T>(resp: T[] | null) {
     if (resp && resp[0]) for (const key in resp[0]) return resp[0][key] as T;
     return null;
