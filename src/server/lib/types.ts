@@ -1,4 +1,4 @@
-import { Dict } from "@communityox/ox_core";
+import { Dict } from "@communityox/ox_core"
 
 export interface TransferAccountBalance {
   toId: number;
