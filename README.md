@@ -43,3 +43,9 @@ A complete banking system for FiveM for the [ox_core](https://github.com/communi
 - [ox_inventory](https://github.com/communityox/ox_inventory)
 - [ox_lib](https://github.com/communityox/ox_lib)
 - [oxmysql](https://github.com/communityox/oxmysql)
+
+## Installation
+1. Install bun if you don't have it
+```bash
+npm i -g bun # the last `npm` command you'll ever need
+```
