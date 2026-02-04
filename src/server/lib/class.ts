@@ -6,7 +6,7 @@ import {
   SetAccountType,
   UpdateAccountAccess,
 } from './db'
-import { CanPerformAction, DeleteAccount, DepositMoney, PerformTransaction, WithdrawMoney } from './account';
+import { CanPerformAction, DeleteAccount, DepositMoney, PayAccountInvoice, PerformTransaction, WithdrawMoney } from './account';
 import { TransferAccountBalance } from './types';
 
 export class ClassInterface {
@@ -58,6 +58,10 @@ export class OxPlayer extends ClassInterface {
   source: number | string;
   userId: number;
   charId?: number;
+  stateId?: string;
+  username: string;
+  identifier: string;
+  ped: number;
   #groups: Dict<number>;
 
   protected static members: Dict<OxPlayer> = {};
@@ -98,6 +102,16 @@ export class OxPlayer extends ClassInterface {
         }
       }
     }
+  }
+
+  async payInvoice(invoiceId: number) {
+    if (!this.charId) return;
+    return await PayAccountInvoice(invoiceId, this.charId);
+  }
+
+  /** Get an instance of OxPlayer with the matching charId. */
+  static getFromCharId(id: number) {
+    return this.keys.charId[id];
   }
 }
 
