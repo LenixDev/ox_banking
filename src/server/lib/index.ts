@@ -62,22 +62,34 @@ export const GetPlayer = (id: string | number) => {
   return ClassInterface.get(id)
 }
 
-oxmysql.query(`
-  CREATE TABLE IF NOT EXISTS account_roles (
-    id INT(11) NOT NULL AUTO_INCREMENT,
-    name VARCHAR(50) NOT NULL DEFAULT '',
-    deposit TINYINT(1) NOT NULL DEFAULT '0',
-    withdraw TINYINT(1) NOT NULL DEFAULT '0',
-    addUser TINYINT(1) NOT NULL DEFAULT '0',
-    removeUser TINYINT(1) NOT NULL DEFAULT '0',
-    manageUser TINYINT(1) NOT NULL DEFAULT '0',
-    transferOwnership TINYINT(1) NOT NULL DEFAULT '0',
-    viewHistory TINYINT(1) NOT NULL DEFAULT '0',
-    manageAccount TINYINT(1) NOT NULL DEFAULT '0',
-    closeAccount TINYINT(1) NOT NULL DEFAULT '0',
-    sendInvoice TINYINT(1) NOT NULL DEFAULT '0',
-    payInvoice TINYINT(1) NOT NULL DEFAULT '0',
-    PRIMARY KEY (id),
-    UNIQUE INDEX name (name)
-  );
-`)
+setImmediate(async () => {
+
+  await oxmysql.query(`
+    CREATE TABLE IF NOT EXISTS account_roles (
+      id INT(11) NOT NULL AUTO_INCREMENT,
+      name VARCHAR(50) NOT NULL DEFAULT '',
+      deposit TINYINT(1) NOT NULL DEFAULT '0',
+      withdraw TINYINT(1) NOT NULL DEFAULT '0',
+      addUser TINYINT(1) NOT NULL DEFAULT '0',
+      removeUser TINYINT(1) NOT NULL DEFAULT '0',
+      manageUser TINYINT(1) NOT NULL DEFAULT '0',
+      transferOwnership TINYINT(1) NOT NULL DEFAULT '0',
+      viewHistory TINYINT(1) NOT NULL DEFAULT '0',
+      manageAccount TINYINT(1) NOT NULL DEFAULT '0',
+      closeAccount TINYINT(1) NOT NULL DEFAULT '0',
+      sendInvoice TINYINT(1) NOT NULL DEFAULT '0',
+      payInvoice TINYINT(1) NOT NULL DEFAULT '0',
+      PRIMARY KEY (id),
+      UNIQUE INDEX name (name)
+    )
+  `);
+    
+  await oxmysql.query(`
+    INSERT INTO account_roles (id, name, deposit, withdraw, addUser, removeUser, manageUser, transferOwnership, viewHistory, manageAccount, closeAccount, sendInvoice, payInvoice) VALUES
+      (1, 'viewer', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+      (2, 'contributor', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+      (3, 'manager', 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1),
+      (4, 'owner', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+    ON DUPLICATE KEY UPDATE id=id
+  `);
+})
