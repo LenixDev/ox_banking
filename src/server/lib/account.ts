@@ -2,6 +2,7 @@ import { GetGroup, OxAccountPermissions, OxAccountRole } from "@communityox/ox_c
 import { Connection, db, GetConnection, SelectAccount } from "./db";
 import { getRandomInt } from '@communityox/ox_lib';
 import locales from "./common";
+import { OxPlayer } from "./class";
 
 const doesAccountExist = 'SELECT 1 FROM accounts WHERE id = ?';
 const addBalance = 'UPDATE accounts SET balance = balance + ? WHERE id = ?';
