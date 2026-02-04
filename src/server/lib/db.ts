@@ -1,27 +1,8 @@
 import { pool } from './pool';
 import { waitFor } from '@communityox/ox_lib';
-import { Dict } from './types';
+import { MySqlRow, OkPacket } from './types';
 import type { PoolConnection, QueryOptions } from 'mariadb';
-
-interface MySqlRow<T = string | number | boolean | Dict<any> | undefined> {
-  [column: string]: T;
-}
-
-interface OkPacket {
-  affectedRows: number;
-  insertId: number;
-  warningStatus: any;
-}
-
-interface OxAccountMetadata {
-  id: number;
-  balance: number;
-  isDefault: boolean;
-  label: string;
-  type: 'personal' | 'shared' | 'group';
-  owner?: number;
-  group?: string;
-}
+import { OxAccountMetadata, OxAccountUserMetadata } from '@communityox/ox_core';
 
 const getScalar = <T>(resp: T[] | null) => {
   if (resp && resp[0]) for (const key in resp[0]) return resp[0][key] as T;
@@ -106,4 +87,9 @@ export function GetCharIdFromStateId(stateId: string) {
 
 export async function SelectDefaultAccountId(column: 'owner' | 'group' | 'id', id: number | string) {
   return await db.column<number>(`SELECT id FROM accounts WHERE \`${column}\` = ? AND isDefault = 1`, [id]);
+}
+
+const selectAccountRole = 'SELECT role FROM accounts_access WHERE accountId = ? AND charId = ?';
+export function SelectAccountRole(accountId: number, charId: number) {
+  return db.column<OxAccountUserMetadata['role']>(selectAccountRole, [accountId, charId]);
 }
