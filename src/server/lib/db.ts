@@ -35,6 +35,14 @@ export class Connection {
     if (this.transaction) this.commit();
     this.connection.release();
   }
+  beginTransaction() {
+    this.transaction = true;
+    return this.connection.beginTransaction();
+  }
+  rollback() {
+    delete this.transaction;
+    return this.connection.rollback();
+  }
 }
 
 export async function GetConnection() {
@@ -92,4 +100,27 @@ export async function SelectDefaultAccountId(column: 'owner' | 'group' | 'id', i
 const selectAccountRole = 'SELECT role FROM accounts_access WHERE accountId = ? AND charId = ?';
 export function SelectAccountRole(accountId: number, charId: number) {
   return db.column<OxAccountUserMetadata['role']>(selectAccountRole, [accountId, charId]);
+}
+
+export async function UpdateAccountAccess(
+  accountId: number,
+  id: number,
+  role?: string,
+): Promise<{ success: boolean; message?: string }> {
+  if (!role) {
+    const success = await db.update('DELETE FROM accounts_access WHERE accountId = ? AND charId = ?', [accountId, id]);
+
+    if (!success) return { success: false, message: 'something_went_wrong' };
+
+    return { success: true };
+  }
+
+  const success = await db.update(
+    'INSERT INTO accounts_access (accountId, charId, role) VALUE (?, ?, ?) ON DUPLICATE KEY UPDATE role = VALUES(role)',
+    [accountId, id, role],
+  );
+
+  if (!success) return { success: false, message: 'something_went_wrong' };
+
+  return { success: true };
 }
