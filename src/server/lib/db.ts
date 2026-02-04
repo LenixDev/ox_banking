@@ -55,7 +55,7 @@ export async function GetConnection() {
 
 export const db = {
   async execute<T>(query: string | QueryOptions, values?: any[]) {
-    using conn = await GetConnection();
+    const conn = await GetConnection();
     return conn.execute<T extends OkPacket ? OkPacket : T[]>(query, values);
   },
   async column<T>(query: string | QueryOptions, values?: any[]) {
