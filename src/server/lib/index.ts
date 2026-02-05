@@ -53,11 +53,3 @@ export async function GetCharacterAccount(id: number | string) {
 }
 
 export const GetPlayer = (id: string | number) => CreatePlayerInstance(OxPlayer.get(id))
-    
-//accounts
-// CONSTRAINT accounts_group_fk
-//         FOREIGN KEY (\`group\`) REFERENCES ox_groups (name)
-//           ON UPDATE SET NULL ON DELETE SET NULL,
-//       CONSTRAINT accounts_owner_fk
-//         FOREIGN KEY (owner) REFERENCES characters (charId)
-//           ON UPDATE SET NULL ON DELETE SET NULL

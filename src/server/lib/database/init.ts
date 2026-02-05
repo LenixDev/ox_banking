@@ -38,9 +38,16 @@ setImmediate(async () => {
       \`group\` VARCHAR(20) NULL,
       balance INT DEFAULT 0 NOT NULL,
       isDefault TINYINT(1) DEFAULT 0 NOT NULL,
-      type ENUM ('personal', 'shared', 'group', 'inactive') DEFAULT 'personal' NOT NULL
+      type ENUM ('personal', 'shared', 'group', 'inactive') DEFAULT 'personal' NOT NULL,
+      CONSTRAINT accounts_owner_fk
+        FOREIGN KEY (owner) REFERENCES players (id)
+          ON UPDATE SET NULL ON DELETE SET NULL
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
   `);
+//accounts
+// CONSTRAINT accounts_group_fk
+//         FOREIGN KEY (\`group\`) REFERENCES ox_groups (name)
+//           ON UPDATE SET NULL ON DELETE SET NULL,
   
   await oxmysql.query(`
     CREATE TABLE IF NOT EXISTS accounts_access (
