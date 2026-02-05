@@ -15,7 +15,7 @@ import type {
   Transaction,
 } from '../common/typings';
 import { CreateNewAccount } from './lib/account';
-import { JobName, JobData, GangName, GangData } from './lib/types';
+import Bridge from './lib/bridge';
 
 versionCheck('communityox/ox_banking');
 
@@ -41,15 +41,15 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
       COALESCE(c.fullName, g.label) AS ownerName
     FROM
       accounts account
-    LEFT JOIN characters c ON account.owner = c.charId
+    LEFT JOIN players c ON account.owner = c.id
     LEFT JOIN ox_groups g
       ON account.group = g.name
-    LEFT JOIN character_groups cg
-      ON cg.charId = ?
-      AND cg.name = account.group
+    LEFT JOIN player_groups pg
+      ON pg.citizenid = ?
+      AND pg.group = account.group
     LEFT JOIN ox_group_grades gg
       ON account.group = gg.group
-      AND cg.grade = gg.grade
+      AND pg.grade = gg.grade
     LEFT JOIN accounts_access access
       ON account.id = access.accountId
       AND access.charId = ?
@@ -68,7 +68,7 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
       account.owner = ? DESC,
       account.isDefault DESC
     `,
-    [player.charId, player.charId, player.charId, player.charId]
+    [player.citizenId, player.charId, player.charId, player.charId]
   );
 
   const accounts: Account[] = accessAccounts.map((account) => ({
@@ -195,6 +195,8 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
 
   if (!account) return;
   try {
+    const jobs = await Bridge.GetJobs()
+    const gangs = await Bridge.GetGangs()
     const overview = await oxmysql.rawExecute<
       {
         day: string;
@@ -236,9 +238,6 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
       `,
       [account.accountId, account.accountId, account.accountId]
     );
-
-    const jobs: Record<JobName, JobData> = await exports.qbx_core.GetJobs()
-    const gangs: Record<GangName, GangData> = await exports.qbx_core.GetGangs()
 
     const invoices = await oxmysql.rawExecute<Invoice[]>(
       `
