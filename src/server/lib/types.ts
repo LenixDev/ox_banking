@@ -1,5 +1,31 @@
 import { Dict, OxAccountPermissions, OxAccountRole } from "@communityox/ox_core"
 
+type GroupName = string
+interface GroupGradeData {
+  name: string
+  isboss: boolean
+  bankAuth: boolean
+}
+
+interface GroupStandards<GradeData> {
+  label: string
+  grades: Record<number, GradeData>
+}
+interface JobGradeData extends GroupGradeData {
+  payment: number
+}
+interface GangGradeData extends GroupGradeData {}
+
+export type JobName = GroupName
+export type GangName = GroupName
+
+export interface JobData extends GroupStandards<JobGradeData> {
+  type?: string
+  defaultDuty: boolean
+  offDutyPay: boolean
+}
+export interface GangData extends GroupStandards<GangGradeData> {}
+
 export type OxAccountMetadataRow = OxAccountPermissions & { id?: number; name?: OxAccountRole };
 
 export interface TransferAccountBalance {
