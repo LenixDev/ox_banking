@@ -149,7 +149,7 @@ setImmediate(async () => {
       balance INT DEFAULT 0 NOT NULL,
       isDefault TINYINT(1) DEFAULT 0 NOT NULL,
       type ENUM ('personal', 'shared', 'group', 'inactive') DEFAULT 'personal' NOT NULL
-    );
+    ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
   `);
   
   await oxmysql.query(`
