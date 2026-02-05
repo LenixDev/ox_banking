@@ -108,3 +108,7 @@ export class OxAccount extends ClassInterface {
     return await CanPerformAction(player, this.accountId, role, permission);
   }
 }
+
+export class AccountInterface {
+  constructor(public accountId: number) {}
+}

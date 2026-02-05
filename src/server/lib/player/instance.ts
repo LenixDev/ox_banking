@@ -1,5 +1,4 @@
-import { PlayerInterface } from "./interface";
-import { OxPlayer } from "./class";
+import { OxPlayer, PlayerInterface } from "./class";
 
 export function CreatePlayerInstance(player?: OxPlayer) {
   if (!player) return;

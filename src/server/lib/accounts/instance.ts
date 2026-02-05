@@ -1,4 +1,4 @@
-import { OxAccount } from "./class";
+import { AccountInterface, OxAccount } from "./class";
 
 export const CreateAccountInstance = (account?: OxAccount) => {
   if (!account) return;
