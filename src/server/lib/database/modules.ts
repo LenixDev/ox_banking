@@ -61,7 +61,7 @@ export const SetAccountType = async(accountId: number, type: string): Promise<{ 
 }
 
 export const GetCharIdFromStateId = async (stateId: string) => {
-  return db.column<number>('SELECT charId FROM characters WHERE stateId = ?', [stateId]);
+  return db.column<number>('SELECT id FROM players WHERE citizenid = ?', [stateId]);
 }
 
 export const SelectDefaultAccountId = async (column: 'owner' | 'group' | 'id', id: number | string) => {
