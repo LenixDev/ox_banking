@@ -28,7 +28,7 @@ const GenerateAccountId = async (conn: Connection) => {
 }
 
 export const CreateNewAccount = async (owner: string | number, label: string, isDefault?: boolean) => {
-  using conn = await GetConnection();
+  const conn = await GetConnection();
 
   const accountId = await GenerateAccountId(conn);
   const column = typeof owner === 'string' ? 'group' : 'owner';
