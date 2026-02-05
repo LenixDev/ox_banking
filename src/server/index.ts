@@ -31,11 +31,10 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
   const player = GetPlayer(playerId);
   if (!player.charId) return;
 
-  const jobs = await exports.qbx_core.GetJobs();
-  const gangs = await exports.qbx_core.GetGangs();
+  const jobs = await Bridge.GetJobs();
+  const gangs = await Bridge.GetGangs();
 
   try {
-
     const accessAccounts = await oxmysql.rawExecute<OxAccountUserMetadata[]>(
       `
       SELECT DISTINCT
