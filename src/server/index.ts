@@ -27,40 +27,36 @@ if (coreDepCheck !== true) {
     // console.error(coreDepCheck[1]);
   }, 1000);
 }
-
 onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> => {
   const player = GetPlayer(playerId);
-
   if (!player.charId) return;
 
-  const accessAccounts = await oxmysql.rawExecute<OxAccountUserMetadata[]>(
-    `
-    SELECT DISTINCT
-      COALESCE(access.role, gg.accountRole) AS role,
+  const jobs = await exports.qbx_core.GetJobs();
+  const gangs = await exports.qbx_core.GetGangs();
+
+  try {
+
+    const accessAccounts = await oxmysql.rawExecute<OxAccountUserMetadata[]>(
+      `
+      SELECT DISTINCT
+      access.role,
       account.*,
-      COALESCE(c.fullName, g.label) AS ownerName
-    FROM
+      c.charinfo,
+      pg.grade
+      FROM
       accounts account
     LEFT JOIN players c ON account.owner = c.id
-    LEFT JOIN ox_groups g
-      ON account.group = g.name
     LEFT JOIN player_groups pg
       ON pg.citizenid = ?
-      AND pg.group = account.group
-    LEFT JOIN ox_group_grades gg
-      ON account.group = gg.group
-      AND pg.grade = gg.grade
+      AND pg.\`group\` = account.\`group\`
     LEFT JOIN accounts_access access
-      ON account.id = access.accountId
-      AND access.charId = ?
+    ON account.id = access.accountId
+    AND access.charId = ?
     WHERE
       account.type != 'inactive'
       AND (
         access.charId = ?
-        OR (
-          account.group IS NOT NULL
-          AND gg.accountRole IS NOT NULL
-        )
+        OR account.\`group\` IS NOT NULL
       )
     GROUP BY
       account.id
@@ -68,21 +64,38 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
       account.owner = ? DESC,
       account.isDefault DESC
     `,
-    [player.citizenId, player.charId, player.charId, player.charId]
+    [player.stateId, player.charId, player.charId, player.charId]
   );
+  console.debug(accessAccounts)
 
-  const accounts: Account[] = accessAccounts.map((account) => ({
-    group: account.group,
-    id: account.id,
-    label: account.label,
-    isDefault: player.charId === account.owner ? account.isDefault : false,
-    balance: account.balance,
-    type: account.type,
-    owner: account.ownerName,
-    role: account.role,
-  }));
-
-  return accounts;
+  const accounts: Account[] = accessAccounts
+    .filter(account => {
+      if (account.group && account.grade != null) {
+        const groupData = jobs[account.group] || gangs[account.group];
+        const gradeData = groupData?.grades[account.grade];
+        return gradeData?.bankAuth === true;
+      }
+      return true;
+    })
+    .map((account) => {
+      const charinfo = account.charinfo ? JSON.parse(account.charinfo) : null;
+      const groupData = account.group && (jobs[account.group] || gangs[account.group]);
+      const gradeData = groupData?.grades[account.grade];
+      
+      return {
+        group: account.group,
+        id: account.id,
+        label: account.label,
+        isDefault: player.charId === account.owner ? account.isDefault : false,
+        balance: account.balance,
+        type: account.type,
+        owner: charinfo ? `${charinfo.firstname} ${charinfo.lastname}` : groupData?.label,
+        role: account.role || gradeData?.name,
+      };
+    });
+    
+    return accounts;
+  } catch(errorOccured) { throw new Error(errorOccured) }
 });
 
 onClientCallback('ox_banking:createAccount', async (playerId, { name, shared }: { name: string; shared: boolean }) => {
