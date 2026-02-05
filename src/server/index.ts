@@ -14,6 +14,7 @@ import type {
   RawLogItem,
   Transaction,
 } from '../common/typings';
+import { CreateNewAccount } from './lib/account';
 
 versionCheck('communityox/ox_banking');
 
@@ -181,78 +182,120 @@ onClientCallback(
 );
 
 onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<DashboardData> => {
-  const account = await GetPlayer(playerId)?.getAccount();
+  const player = GetPlayer(playerId);
+  if (!player?.charId) return;
+
+  let account = await player.getAccount();
+
+  if (!account) {
+    await CreateNewAccount(player.charId, 'Personal', true);
+    account = await player.getAccount();
+  }
 
   if (!account) return;
-
-  const overview = await oxmysql.rawExecute<
-    {
-      day: string;
-      income: number;
-      expenses: number;
-    }[]
-  >(
-    `
-    SELECT
-      LOWER(DAYNAME(d.date)) as day,
-      CAST(COALESCE(SUM(CASE WHEN at.toId = ? THEN at.amount ELSE 0 END), 0) AS UNSIGNED) as income,
-      CAST(COALESCE(SUM(CASE WHEN at.fromId = ? THEN at.amount ELSE 0 END), 0) AS UNSIGNED) as expenses
-    FROM (
-      SELECT CURDATE() as date
-      UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 1 DAY)
-      UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 2 DAY)
-      UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 3 DAY)
-      UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 4 DAY)
-      UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 5 DAY)
-      UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-    ) d
-    LEFT JOIN accounts_transactions at ON d.date = DATE(at.date) AND (at.toId = ? OR at.fromId = ?)
-    GROUP BY d.date
-    ORDER BY d.date ASC
-    `,
-    [account.accountId, account.accountId, account.accountId, account.accountId]
-  );
-
-  const transactions = await oxmysql.rawExecute<Transaction[]>(
-    `
-    SELECT id, amount, UNIX_TIMESTAMP(date) as date, toId, fromId, message,
-    CASE
+  try {
+    const overview = await oxmysql.rawExecute<
+      {
+        day: string;
+        income: number;
+        expenses: number;
+      }[]
+    >(
+      `
+      SELECT
+        LOWER(DAYNAME(d.date)) as day,
+        CAST(COALESCE(SUM(CASE WHEN at.toId = ? THEN at.amount ELSE 0 END), 0) AS UNSIGNED) as income,
+        CAST(COALESCE(SUM(CASE WHEN at.fromId = ? THEN at.amount ELSE 0 END), 0) AS UNSIGNED) as expenses
+      FROM (
+        SELECT CURDATE() as date
+        UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+        UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 2 DAY)
+        UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 3 DAY)
+        UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 4 DAY)
+        UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 5 DAY)
+        UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+        ) d
+      LEFT JOIN accounts_transactions at ON d.date = DATE(at.date) AND (at.toId = ? OR at.fromId = ?)
+      GROUP BY d.date
+      ORDER BY d.date ASC
+      `,
+      [account.accountId, account.accountId, account.accountId, account.accountId]
+    );
+    const transactions = await oxmysql.rawExecute<Transaction[]>(
+      `
+      SELECT id, amount, UNIX_TIMESTAMP(date) as date, toId, fromId, message,
+      CASE
       WHEN toId = ? THEN 'inbound'
       ELSE 'outbound'
-    END AS 'type'
-    FROM accounts_transactions
-    WHERE toId = ? OR fromId = ?
-    ORDER BY id DESC
-    LIMIT 5
-    `,
-    [account.accountId, account.accountId, account.accountId]
-  );
+      END AS 'type'
+      FROM accounts_transactions
+      WHERE toId = ? OR fromId = ?
+      ORDER BY id DESC
+      LIMIT 5
+      `,
+      [account.accountId, account.accountId, account.accountId]
+    );
 
-  const invoices = await oxmysql.rawExecute<Invoice[]>(
-    `
-     SELECT ai.id, ai.amount, UNIX_TIMESTAMP(ai.dueDate) as dueDate, UNIX_TIMESTAMP(ai.paidAt) as paidAt, CONCAT(a.label, ' - ', IFNULL(co.fullName, g.label)) AS label,
-     CASE
-        WHEN ai.payerId IS NOT NULL THEN 'paid'
-        WHEN NOW() > ai.dueDate THEN 'overdue'
-        ELSE 'unpaid'
-     END AS status
-     FROM accounts_invoices ai
-     LEFT JOIN accounts a ON a.id = ai.fromAccount
-     LEFT JOIN characters co ON (a.owner IS NOT NULL AND co.charId = a.owner)
-     LEFT JOIN ox_groups g ON (a.owner IS NULL AND g.name = a.group)
-     WHERE ai.toAccount = ?
-     ORDER BY ai.id DESC
-     LIMIT 5
-     `,
-    [account.accountId]
-  );
+    type GroupName = string
+    type JobName = GroupName
+    type GangName = GroupName
+    interface GroupGradeData {
+      name: string
+      isboss: boolean
+      bankAuth: boolean
+    }
 
-  return {
-    balance: await account.get('balance'),
-    overview,
-    transactions,
-    invoices,
-  };
+    interface GroupStandards<GradeData> {
+      label: string
+      grades: Record<number, GradeData>
+    }
+    interface JobData extends GroupStandards<JobGradeData> {
+      type?: string
+      defaultDuty: boolean
+      offDutyPay: boolean
+    }
+    interface GangData extends GroupStandards<GangGradeData> {}
+    
+    interface JobGradeData extends GroupGradeData {
+      payment: number
+    }
+    interface GangGradeData extends GroupGradeData {}
+
+    const jobs: Record<JobName, JobData> = exports.qbx_core.GetJobs()
+    const gangs: Record<GangName, GangData>  = exports.qbx_core.GetGangs()
+    const groups = {
+      jobs: jobs,
+      gangs: gangs,
+    }
+    const invoices = await oxmysql.rawExecute<Invoice[]>(
+      `
+      SELECT ai.id, ai.amount, UNIX_TIMESTAMP(ai.dueDate) as dueDate, UNIX_TIMESTAMP(ai.paidAt) as paidAt, CONCAT(a.label, ' - ', IFNULL(co.fullName, g.label)) AS label,
+      CASE
+          WHEN ai.payerId IS NOT NULL THEN 'paid'
+          WHEN NOW() > ai.dueDate THEN 'overdue'
+          ELSE 'unpaid'
+          END AS status
+      FROM accounts_invoices ai
+      LEFT JOIN accounts a ON a.id = ai.fromAccount
+      LEFT JOIN players co ON (a.owner IS NOT NULL AND co.id = a.owner)
+      LEFT JOIN ox_groups g ON (a.owner IS NULL AND g.name = a.group)
+      WHERE ai.toAccount = ?
+      ORDER BY ai.id DESC
+      LIMIT 5
+      `,
+      [account.accountId]
+    );
+    console.warn('pass3')
+    
+    const blnc = await account.get('balance')
+    console.debug(blnc)
+    return {
+      balance: blnc,
+      overview,
+      transactions,
+      invoices,
+    };
+  } catch(errorOccured) { throw new Error(errorOccured); }
 });
 
 onClientCallback(
