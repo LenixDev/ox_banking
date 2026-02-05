@@ -3,7 +3,8 @@ import { SelectAccount, SetAccountType, GetCharIdFromStateId, SelectAccountRole,
 import { TransferAccountBalance } from "../types";
 import { ClassInterface } from "../classInterface";
 import { OxPlayer } from "../player/class";
-import { PerformTransaction, DepositMoney, WithdrawMoney, DeleteAccount, CanPerformAction } from "./modules";
+import { PerformTransaction, DepositMoney, WithdrawMoney, DeleteAccount } from "./actions";
+import { CanPerformAction } from "./modules";
 
 export class OxAccount extends ClassInterface {
   protected static members: Dict<OxAccount> = {};
