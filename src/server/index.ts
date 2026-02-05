@@ -15,6 +15,7 @@ import type {
   Transaction,
 } from '../common/typings';
 import { CreateNewAccount } from './lib/account';
+import { JobName, JobData, GangName, GangData } from './lib/types';
 
 versionCheck('communityox/ox_banking');
 
@@ -236,38 +237,13 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
       [account.accountId, account.accountId, account.accountId]
     );
 
-    type GroupName = string
-    type JobName = GroupName
-    type GangName = GroupName
-    interface GroupGradeData {
-      name: string
-      isboss: boolean
-      bankAuth: boolean
-    }
-
-    interface GroupStandards<GradeData> {
-      label: string
-      grades: Record<number, GradeData>
-    }
-    interface JobData extends GroupStandards<JobGradeData> {
-      type?: string
-      defaultDuty: boolean
-      offDutyPay: boolean
-    }
-    interface GangData extends GroupStandards<GangGradeData> {}
-    
-    interface JobGradeData extends GroupGradeData {
-      payment: number
-    }
-    interface GangGradeData extends GroupGradeData {}
-
     const jobs: Record<JobName, JobData> = await exports.qbx_core.GetJobs()
     const gangs: Record<GangName, GangData> = await exports.qbx_core.GetGangs()
 
     const invoices = await oxmysql.rawExecute<Invoice[]>(
       `
       SELECT ai.id, ai.amount, UNIX_TIMESTAMP(ai.dueDate) as dueDate, UNIX_TIMESTAMP(ai.paidAt) as paidAt, 
-      a.label, a.owner, a.\`group\`, co.fullName,
+      a.label, a.owner, a.\`group\`, CONCAT(JSON_UNQUOTE(JSON_EXTRACT(co.charinfo, '$.firstname')), ' ', JSON_UNQUOTE(JSON_EXTRACT(co.charinfo, '$.lastname'))) AS fullName,
       CASE
         WHEN ai.payerId IS NOT NULL THEN 'paid'
         WHEN NOW() > ai.dueDate THEN 'overdue'
@@ -288,12 +264,9 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
       const groupLabel = invoice.group && (jobs[invoice.group]?.label || gangs[invoice.group]?.label);
       invoice.label = `${invoice.label} - ${invoice.fullName || groupLabel || 'Unknown'}`;
     });
-    console.warn('pass3')
-    
-    const blnc = await account.get('balance')
-    console.debug(blnc)
+
     return {
-      balance: blnc,
+      balance: await account.get('balance'),
       overview,
       transactions,
       invoices,
