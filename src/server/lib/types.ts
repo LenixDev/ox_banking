@@ -28,7 +28,12 @@ interface GangData extends GroupStandards<GangGradeData> {}
 
 export type QBXJobs = Record<JobName, JobData>
 export type QBXGangs = Record<GangName, GangData>
-
+export interface QBoxPlayer {
+  PlayerData: {
+    cid: number
+    citizenid: string
+  }
+}
 export type OxAccountMetadataRow = OxAccountPermissions & { id?: number; name?: OxAccountRole };
 
 export interface TransferAccountBalance {

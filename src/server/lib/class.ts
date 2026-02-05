@@ -7,7 +7,7 @@ import {
   UpdateAccountAccess,
 } from './db'
 import { CanPerformAction, DeleteAccount, DepositMoney, PayAccountInvoice, PerformTransaction, WithdrawMoney } from './account';
-import { TransferAccountBalance } from './types';
+import { QBoxPlayer, TransferAccountBalance } from './types';
 
 export class ClassInterface {
   protected static members: Dict<any>;
@@ -28,14 +28,10 @@ export class ClassInterface {
 
     onNet('QBCore:Server:OnPlayerLoaded', async () => {
       const src = source
-      const { PlayerData: { cid, citizenid } }: {
-        PlayerData: {
-          cid: number
-          citizenid: string
-        }
-      } = await exports.qbx_core.GetPlayer(src)
-      const player = new OxPlayer(src, cid, citizenid)
-      OxPlayer.add(src, player);
+      const { PlayerData: {
+        cid, citizenid
+      } }: QBoxPlayer = await exports.qbx_core.GetPlayer(src)
+      OxPlayer.add(src, new OxPlayer(src, cid, citizenid));
     });
 
     const name = this.name;
