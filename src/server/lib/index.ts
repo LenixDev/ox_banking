@@ -56,14 +56,10 @@ export const GetPlayer = (id: string | number) => {
   
   if (!player) return;
 
-  const { source, userId, charId, stateId, username, identifier, ped } = player;
+  const { source, charId, stateId } = player;
   return new PlayerInterface(
     source as number,
-    userId,
     charId,
     stateId,
-    username,
-    identifier,
-    ped,
   ) as OxPlayer & PlayerInterface;
 }
