@@ -44,7 +44,7 @@ setImmediate(async () => {
           ON UPDATE SET NULL ON DELETE SET NULL
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
   `);
-//accounts
+//@ts-expect-error unused, used to ensures data integrity
 // CONSTRAINT accounts_group_fk
 //         FOREIGN KEY (\`group\`) REFERENCES ox_groups (name)
 //           ON UPDATE SET NULL ON DELETE SET NULL,
