@@ -34,7 +34,7 @@ export class ClassInterface {
         }
       } = await exports.qbx_core.GetPlayer(src)
       const player = new OxPlayer(src, cid)
-      this.members[src] = player;
+      OxPlayer.add(src, player);
     });
 
     const name = this.name;
