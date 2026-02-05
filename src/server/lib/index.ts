@@ -15,6 +15,7 @@ const CreateAccountInstance = (account?: OxAccount) => {
   return new AccountInterface(account.accountId) as OxAccount;
 }
 
+// TODO: test when no account found (not created with char creation)
 export const CreateAccount = async (owner: number | string, label: string) => {
   const accountId = await CreateNewAccount(owner, label);
   const account = await OxAccount.get(accountId);
@@ -138,4 +139,38 @@ setImmediate(async () => {
       (4, 'owner', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
     ON DUPLICATE KEY UPDATE id=id
   `);
+  
+  await oxmysql.query(`
+    CREATE TABLE IF NOT EXISTS accounts (
+      id INT UNSIGNED NOT NULL PRIMARY KEY,
+      label VARCHAR(50) NOT NULL,
+      owner INT UNSIGNED NULL,
+      \`group\` VARCHAR(20) NULL,
+      balance INT DEFAULT 0 NOT NULL,
+      isDefault TINYINT(1) DEFAULT 0 NOT NULL,
+      type ENUM ('personal', 'shared', 'group', 'inactive') DEFAULT 'personal' NOT NULL
+    );
+  `);
+  
+  await oxmysql.query(`
+    CREATE TABLE IF NOT EXISTS accounts_access (
+      accountId INT UNSIGNED NOT NULL,
+      charId INT UNSIGNED NOT NULL,
+      role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+      PRIMARY KEY (accountId, charId)
+    );
+  `);
 })
+
+// accounts_access
+// CONSTRAINT accounts_access_accountId_fk FOREIGN KEY (accountId) REFERENCES accounts (id) ON DELETE CASCADE ON UPDATE CASCADE,
+// CONSTRAINT accounts_access_charId_fk FOREIGN KEY (charId) REFERENCES players (cid) ON DELETE CASCADE ON UPDATE CASCADE,
+// CONSTRAINT FK_accounts_access_account_roles FOREIGN KEY (role) REFERENCES account_roles (name) ON UPDATE CASCADE ON DELETE CASCADE
+
+//accounts
+// CONSTRAINT accounts_group_fk
+//         FOREIGN KEY (\`group\`) REFERENCES ox_groups (name)
+//           ON UPDATE SET NULL ON DELETE SET NULL,
+//       CONSTRAINT accounts_owner_fk
+//         FOREIGN KEY (owner) REFERENCES characters (charId)
+//           ON UPDATE SET NULL ON DELETE SET NULL
