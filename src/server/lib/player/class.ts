@@ -1,6 +1,6 @@
 import { Dict } from "@communityox/ox_core";
 import { ClassInterface } from "../classInterface";
-import { PayAccountInvoice } from "../accounts/modules";
+import { UpdateInvoice } from "../accounts/modules";
 import { GetCharacterAccount } from "..";
 
 export class OxPlayer extends ClassInterface {
@@ -53,7 +53,7 @@ export class OxPlayer extends ClassInterface {
 
   async payInvoice(invoiceId: number) {
     if (!this.charId) return;
-    return await PayAccountInvoice(invoiceId, this.charId);
+    return await UpdateInvoice(invoiceId, this.charId);
   }
 
   /** Get an instance of OxPlayer with the matching charId. */
