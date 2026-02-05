@@ -28,12 +28,13 @@ export class ClassInterface {
 
     onNet('QBCore:Server:OnPlayerLoaded', async () => {
       const src = source
-      const { PlayerData: { cid } }: {
+      const { PlayerData: { cid, citizenid } }: {
         PlayerData: {
           cid: number
+          citizenid: string
         }
       } = await exports.qbx_core.GetPlayer(src)
-      const player = new OxPlayer(src, cid)
+      const player = new OxPlayer(src, cid, citizenid)
       OxPlayer.add(src, player);
     });
 
@@ -86,12 +87,12 @@ export class OxPlayer extends ClassInterface {
     return this.members[id];
   }
 
-  constructor(source: number, charId?: number) {
+  constructor(source: number, charId?: number, stateId?: string) {
     super();
     this.source = source;
     this.#groups = {};
     this.charId = charId;
-
+    this.stateId = stateId;
   }
 
   /** Returns the current grade of a given group name, or the first matched name and grade in the filter. */
@@ -151,6 +152,7 @@ export class OxAccount extends ClassInterface {
   async get<T extends keyof OxAccountMetadata>(
     keys: T | T[],
   ): Promise<OxAccountMetadata[T] | Pick<OxAccountMetadata, T> | null> {
+    console.warn(keys)
     const metadata = await SelectAccount(this.accountId);
 
     if (!metadata) return null;
