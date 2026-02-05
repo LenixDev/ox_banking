@@ -23,12 +23,12 @@ export class OxPlayer extends ClassInterface {
     return this.members[id];
   }
 
-  constructor(source: number, charId?: number) {
+  constructor(source: number, charId?: number, stateId?: string) {
     super();
     this.source = source;
     this.#groups = {};
     this.charId = charId;
-
+    this.stateId = stateId;
   }
 
   /** Returns the current grade of a given group name, or the first matched name and grade in the filter. */

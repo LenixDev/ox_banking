@@ -14,6 +14,8 @@ import type {
   RawLogItem,
   Transaction,
 } from '../common/typings';
+import { CreateNewAccount } from './lib/account';
+import Bridge from './lib/bridge';
 
 versionCheck('communityox/ox_banking');
 
@@ -25,40 +27,35 @@ if (coreDepCheck !== true) {
     // console.error(coreDepCheck[1]);
   }, 1000);
 }
-
 onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> => {
   const player = GetPlayer(playerId);
-
   if (!player.charId) return;
 
-  const accessAccounts = await oxmysql.rawExecute<OxAccountUserMetadata[]>(
-    `
-    SELECT DISTINCT
-      COALESCE(access.role, gg.accountRole) AS role,
+  const jobs = await Bridge.GetJobs();
+  const gangs = await Bridge.GetGangs();
+
+  try {
+    const accessAccounts = await oxmysql.rawExecute<OxAccountUserMetadata[]>(
+      `
+      SELECT DISTINCT
+      access.role,
       account.*,
-      COALESCE(c.fullName, g.label) AS ownerName
-    FROM
+      c.charinfo,
+      pg.grade
+      FROM
       accounts account
-    LEFT JOIN characters c ON account.owner = c.charId
-    LEFT JOIN ox_groups g
-      ON account.group = g.name
-    LEFT JOIN character_groups cg
-      ON cg.charId = ?
-      AND cg.name = account.group
-    LEFT JOIN ox_group_grades gg
-      ON account.group = gg.group
-      AND cg.grade = gg.grade
+    LEFT JOIN players c ON account.owner = c.id
+    LEFT JOIN player_groups pg
+      ON pg.citizenid = ?
+      AND pg.\`group\` = account.\`group\`
     LEFT JOIN accounts_access access
-      ON account.id = access.accountId
-      AND access.charId = ?
+    ON account.id = access.accountId
+    AND access.charId = ?
     WHERE
       account.type != 'inactive'
       AND (
         access.charId = ?
-        OR (
-          account.group IS NOT NULL
-          AND gg.accountRole IS NOT NULL
-        )
+        OR account.\`group\` IS NOT NULL
       )
     GROUP BY
       account.id
@@ -66,21 +63,38 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
       account.owner = ? DESC,
       account.isDefault DESC
     `,
-    [player.charId, player.charId, player.charId, player.charId]
+    [player.stateId, player.charId, player.charId, player.charId]
   );
+  console.debug(accessAccounts)
 
-  const accounts: Account[] = accessAccounts.map((account) => ({
-    group: account.group,
-    id: account.id,
-    label: account.label,
-    isDefault: player.charId === account.owner ? account.isDefault : false,
-    balance: account.balance,
-    type: account.type,
-    owner: account.ownerName,
-    role: account.role,
-  }));
-
-  return accounts;
+  const accounts: Account[] = accessAccounts
+    .filter(account => {
+      if (account.group && account.grade != null) {
+        const groupData = jobs[account.group] || gangs[account.group];
+        const gradeData = groupData?.grades[account.grade];
+        return gradeData?.bankAuth === true;
+      }
+      return true;
+    })
+    .map((account) => {
+      const charinfo = account.charinfo ? JSON.parse(account.charinfo) : null;
+      const groupData = account.group && (jobs[account.group] || gangs[account.group]);
+      const gradeData = groupData?.grades[account.grade];
+      
+      return {
+        group: account.group,
+        id: account.id,
+        label: account.label,
+        isDefault: player.charId === account.owner ? account.isDefault : false,
+        balance: account.balance,
+        type: account.type,
+        owner: charinfo ? `${charinfo.firstname} ${charinfo.lastname}` : groupData?.label,
+        role: account.role || gradeData?.name,
+      };
+    });
+    
+    return accounts;
+  } catch(errorOccured) { throw new Error(errorOccured) }
 });
 
 onClientCallback('ox_banking:createAccount', async (playerId, { name, shared }: { name: string; shared: boolean }) => {
@@ -181,78 +195,94 @@ onClientCallback(
 );
 
 onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<DashboardData> => {
-  const account = await GetPlayer(playerId)?.getAccount();
+  const player = GetPlayer(playerId);
+  if (!player?.charId) return;
+
+  let account = await player.getAccount();
+
+  if (!account) {
+    await CreateNewAccount(player.charId, 'Personal', true);
+    account = await player.getAccount();
+  }
 
   if (!account) return;
-
-  const overview = await oxmysql.rawExecute<
-    {
-      day: string;
-      income: number;
-      expenses: number;
-    }[]
-  >(
-    `
-    SELECT
-      LOWER(DAYNAME(d.date)) as day,
-      CAST(COALESCE(SUM(CASE WHEN at.toId = ? THEN at.amount ELSE 0 END), 0) AS UNSIGNED) as income,
-      CAST(COALESCE(SUM(CASE WHEN at.fromId = ? THEN at.amount ELSE 0 END), 0) AS UNSIGNED) as expenses
-    FROM (
-      SELECT CURDATE() as date
-      UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 1 DAY)
-      UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 2 DAY)
-      UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 3 DAY)
-      UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 4 DAY)
-      UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 5 DAY)
-      UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-    ) d
-    LEFT JOIN accounts_transactions at ON d.date = DATE(at.date) AND (at.toId = ? OR at.fromId = ?)
-    GROUP BY d.date
-    ORDER BY d.date ASC
-    `,
-    [account.accountId, account.accountId, account.accountId, account.accountId]
-  );
-
-  const transactions = await oxmysql.rawExecute<Transaction[]>(
-    `
-    SELECT id, amount, UNIX_TIMESTAMP(date) as date, toId, fromId, message,
-    CASE
+  try {
+    const jobs = await Bridge.GetJobs()
+    const gangs = await Bridge.GetGangs()
+    const overview = await oxmysql.rawExecute<
+      {
+        day: string;
+        income: number;
+        expenses: number;
+      }[]
+    >(
+      `
+      SELECT
+        LOWER(DAYNAME(d.date)) as day,
+        CAST(COALESCE(SUM(CASE WHEN at.toId = ? THEN at.amount ELSE 0 END), 0) AS UNSIGNED) as income,
+        CAST(COALESCE(SUM(CASE WHEN at.fromId = ? THEN at.amount ELSE 0 END), 0) AS UNSIGNED) as expenses
+      FROM (
+        SELECT CURDATE() as date
+        UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+        UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 2 DAY)
+        UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 3 DAY)
+        UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 4 DAY)
+        UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 5 DAY)
+        UNION ALL SELECT DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+        ) d
+      LEFT JOIN accounts_transactions at ON d.date = DATE(at.date) AND (at.toId = ? OR at.fromId = ?)
+      GROUP BY d.date
+      ORDER BY d.date ASC
+      `,
+      [account.accountId, account.accountId, account.accountId, account.accountId]
+    );
+    const transactions = await oxmysql.rawExecute<Transaction[]>(
+      `
+      SELECT id, amount, UNIX_TIMESTAMP(date) as date, toId, fromId, message,
+      CASE
       WHEN toId = ? THEN 'inbound'
       ELSE 'outbound'
-    END AS 'type'
-    FROM accounts_transactions
-    WHERE toId = ? OR fromId = ?
-    ORDER BY id DESC
-    LIMIT 5
-    `,
-    [account.accountId, account.accountId, account.accountId]
-  );
+      END AS 'type'
+      FROM accounts_transactions
+      WHERE toId = ? OR fromId = ?
+      ORDER BY id DESC
+      LIMIT 5
+      `,
+      [account.accountId, account.accountId, account.accountId]
+    );
 
-  const invoices = await oxmysql.rawExecute<Invoice[]>(
-    `
-     SELECT ai.id, ai.amount, UNIX_TIMESTAMP(ai.dueDate) as dueDate, UNIX_TIMESTAMP(ai.paidAt) as paidAt, CONCAT(a.label, ' - ', IFNULL(co.fullName, g.label)) AS label,
-     CASE
+    const invoices = await oxmysql.rawExecute<Invoice[]>(
+      `
+      SELECT ai.id, ai.amount, UNIX_TIMESTAMP(ai.dueDate) as dueDate, UNIX_TIMESTAMP(ai.paidAt) as paidAt, 
+      a.label, a.owner, a.\`group\`, CONCAT(JSON_UNQUOTE(JSON_EXTRACT(co.charinfo, '$.firstname')), ' ', JSON_UNQUOTE(JSON_EXTRACT(co.charinfo, '$.lastname'))) AS fullName,
+      CASE
         WHEN ai.payerId IS NOT NULL THEN 'paid'
         WHEN NOW() > ai.dueDate THEN 'overdue'
         ELSE 'unpaid'
-     END AS status
-     FROM accounts_invoices ai
-     LEFT JOIN accounts a ON a.id = ai.fromAccount
-     LEFT JOIN characters co ON (a.owner IS NOT NULL AND co.charId = a.owner)
-     LEFT JOIN ox_groups g ON (a.owner IS NULL AND g.name = a.group)
-     WHERE ai.toAccount = ?
-     ORDER BY ai.id DESC
-     LIMIT 5
-     `,
-    [account.accountId]
-  );
+      END AS status
+      FROM accounts_invoices ai
+      LEFT JOIN accounts a ON a.id = ai.fromAccount
+      LEFT JOIN players co ON (a.owner IS NOT NULL AND co.id = a.owner)
+      WHERE ai.toAccount = ?
+      ORDER BY ai.id DESC
+      LIMIT 5
+      `,
+      [account.accountId]
+    );
 
-  return {
-    balance: await account.get('balance'),
-    overview,
-    transactions,
-    invoices,
-  };
+    invoices.forEach(invoice => {
+      console.debug(invoice.group)
+      const groupLabel = invoice.group && (jobs[invoice.group]?.label || gangs[invoice.group]?.label);
+      invoice.label = `${invoice.label} - ${invoice.fullName || groupLabel || 'Unknown'}`;
+    });
+
+    return {
+      balance: await account.get('balance'),
+      overview,
+      transactions,
+      invoices,
+    };
+  } catch(errorOccured) { throw new Error(errorOccured); }
 });
 
 onClientCallback(

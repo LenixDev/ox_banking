@@ -1,6 +1,7 @@
 import { Dict } from "@communityox/ox_core";
 import { OxPlayer } from "./player/class";
 import { OxAccount } from "./accounts/class";
+import { QBoxPlayer } from "./types";
 
 export class ClassInterface {
   protected static members: Dict<any>;
@@ -21,13 +22,10 @@ export class ClassInterface {
 
     onNet('QBCore:Server:OnPlayerLoaded', async () => {
       const src = source
-      const { PlayerData: { cid } }: {
-        PlayerData: {
-          cid: number
-        }
-      } = await exports.qbx_core.GetPlayer(src)
-      const player = new OxPlayer(src, cid)
-      this.members[src] = player;
+      const { PlayerData: {
+        cid, citizenid
+      } }: QBoxPlayer = await exports.qbx_core.GetPlayer(src)
+      OxPlayer.add(src, new OxPlayer(src, cid, citizenid));
     });
 
     const name = this.name;
