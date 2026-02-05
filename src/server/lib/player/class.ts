@@ -5,12 +5,8 @@ import { GetCharacterAccount } from "..";
 
 export class OxPlayer extends ClassInterface {
   source: number | string;
-  userId: number;
   charId?: number;
   stateId?: string;
-  username: string;
-  identifier: string;
-  ped: number;
   #groups: Dict<number>;
 
   protected static members: Dict<OxPlayer> = {};
