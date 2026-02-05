@@ -1,7 +1,7 @@
 import { Dict } from "@communityox/ox_core";
 import { ClassInterface } from "../classInterface";
-import { UpdateInvoice } from "../accounts/modules";
 import { GetCharacterAccount } from "..";
+import { UpdateInvoice } from "../accounts/actions";
 
 export class OxPlayer extends ClassInterface {
   source: number | string;
