@@ -1,6 +1,8 @@
 import { Dict, OxAccountPermissions, OxAccountRole } from "@communityox/ox_core"
 
 type GroupName = string
+type JobName = GroupName
+type GangName = GroupName
 interface GroupGradeData {
   name: string
   isboss: boolean
@@ -16,15 +18,16 @@ interface JobGradeData extends GroupGradeData {
 }
 interface GangGradeData extends GroupGradeData {}
 
-export type JobName = GroupName
-export type GangName = GroupName
 
-export interface JobData extends GroupStandards<JobGradeData> {
+interface JobData extends GroupStandards<JobGradeData> {
   type?: string
   defaultDuty: boolean
   offDutyPay: boolean
 }
-export interface GangData extends GroupStandards<GangGradeData> {}
+interface GangData extends GroupStandards<GangGradeData> {}
+
+export type QBXJobs = Record<JobName, JobData>
+export type QBXGangs = Record<GangName, GangData>
 
 export type OxAccountMetadataRow = OxAccountPermissions & { id?: number; name?: OxAccountRole };
 
