@@ -2,16 +2,16 @@ import { GetCharIdFromStateId, SelectDefaultAccountId } from './database/modules
 import { OxAccountMetadata, OxAccountPermissions, OxAccountRole } from '@communityox/ox_core';
 import { TransferAccountBalance } from './types';
 import { CreateNewAccount } from './accounts/modules';
-import { OxAccount } from './accounts/class';
+import { AccountInterface, OxAccount } from './accounts/class';
 import { OxPlayer, PlayerInterface } from './player/class';
-import { CreateAccountInstance } from './accounts/instance';
 import './database/init'
 
 // TODO: test when no account found (not created with char creation)
 export const CreateAccount = async (owner: number | string, label: string) => {
   const accountId = await CreateNewAccount(owner, label);
   const account = await OxAccount.get(accountId);
-  return CreateAccountInstance(account)
+  if (!account) return;
+  return new AccountInterface(account.accountId) as OxAccount;
 }
 
 export const GetAccount = async (accountId: number) => {
