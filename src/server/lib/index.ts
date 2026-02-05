@@ -3,9 +3,8 @@ import { OxAccountMetadata, OxAccountPermissions, OxAccountRole } from '@communi
 import { TransferAccountBalance } from './types';
 import { CreateNewAccount } from './accounts/modules';
 import { OxAccount } from './accounts/class';
-import { OxPlayer } from './player/class';
+import { OxPlayer, PlayerInterface } from './player/class';
 import { CreateAccountInstance } from './accounts/instance';
-import { CreatePlayerInstance } from './player/instance';
 import './database/init'
 
 // TODO: test when no account found (not created with char creation)
@@ -52,4 +51,19 @@ export async function GetCharacterAccount(id: number | string) {
   return accountId ? OxAccount.get(accountId) : null;
 }
 
-export const GetPlayer = (id: string | number) => CreatePlayerInstance(OxPlayer.get(id))
+export const GetPlayer = (id: string | number) => {
+  const player = OxPlayer.get(id)
+  
+  if (!player) return;
+
+  const { source, userId, charId, stateId, username, identifier, ped } = player;
+  return new PlayerInterface(
+    source as number,
+    userId,
+    charId,
+    stateId,
+    username,
+    identifier,
+    ped,
+  ) as OxPlayer & PlayerInterface;
+}
