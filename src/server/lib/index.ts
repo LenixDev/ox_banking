@@ -1,19 +1,12 @@
-import { OxAccount, OxPlayer } from './class';
-import { CreateNewAccount } from './account';
-import { GetCharIdFromStateId, SelectDefaultAccountId } from './db';
+import { GetCharIdFromStateId, SelectDefaultAccountId } from './database/modules';
 import { OxAccountMetadata, OxAccountPermissions, OxAccountRole } from '@communityox/ox_core';
 import { TransferAccountBalance } from './types';
 import { oxmysql } from '@communityox/oxmysql';
-
-class AccountInterface {
-  constructor(public accountId: number) {}
-}
-
-const CreateAccountInstance = (account?: OxAccount) => {
-  if (!account) return;
-
-  return new AccountInterface(account.accountId) as OxAccount;
-}
+import { CreateNewAccount } from './accounts/modules';
+import { OxAccount } from './accounts/class';
+import { OxPlayer } from './player/class';
+import { CreateAccountInstance } from './accounts/instance';
+import { CreatePlayerInstance } from './player/instance';
 
 export const CreateAccount = async (owner: number | string, label: string) => {
   const accountId = await CreateNewAccount(owner, label);
@@ -56,54 +49,6 @@ export async function GetCharacterAccount(id: number | string) {
   const charId = typeof id === 'string' ? await GetCharIdFromStateId(id) : id;
   const accountId = charId && (await SelectDefaultAccountId('owner', charId));
   return accountId ? OxAccount.get(accountId) : null;
-}
-
-class PlayerInterface {
-  public state: StateBagInterface;
-
-  constructor(
-    public source: number,
-    public userId: number,
-    public charId: number | undefined,
-    public stateId: string | undefined,
-    public username: string,
-    public identifier: string,
-    public ped: number,
-  ) {
-    this.source = source;
-    this.userId = userId;
-    this.charId = charId;
-    this.stateId = stateId;
-    this.username = username;
-    this.identifier = identifier;
-    this.ped = ped;
-  }
-
-  getCoords() {
-    return GetEntityCoords(this.ped);
-  }
-
-  getState() {
-    return Player(source).state;
-  }
-
-  async getAccount() {
-    return this.charId ? GetCharacterAccount(this.charId) : null;
-  }
-}
-
-function CreatePlayerInstance(player?: OxPlayer) {
-  if (!player) return;
-
-  return new PlayerInterface(
-    player.source as number,
-    player.userId,
-    player.charId,
-    player.stateId,
-    player.username,
-    player.identifier,
-    player.ped,
-  ) as OxPlayer & PlayerInterface;
 }
 
 export const GetPlayer = (id: string | number) => CreatePlayerInstance(OxPlayer.get(id))

@@ -1,56 +1,15 @@
 import { pool } from './pool';
 import { waitFor } from '@communityox/ox_lib';
-import { MySqlRow, OkPacket } from './types';
-import type { PoolConnection, QueryOptions } from 'mariadb';
+import { OkPacket } from '../types';
+import type { QueryOptions } from 'mariadb';
 import { OxAccountMetadata, OxAccountUserMetadata } from '@communityox/ox_core';
+import { Connection } from './class';
+import './pool'
 
-const getScalar = <T>(resp: T[] | null) => {
-  if (resp && resp[0]) for (const key in resp[0]) return resp[0][key] as T;
-  return null;
-}
+const selectAccountRole = 'SELECT role FROM accounts_access WHERE accountId = ? AND charId = ?';
 
-export class Connection {
-  public transaction?: boolean;
-
-  constructor(public connection: PoolConnection) {}
-
-  async execute<T = MySqlRow[] & OkPacket>(query: string | QueryOptions, values?: any[]) {
-    return (await this.connection.execute(query, values)) as T;
-  }
-
-  async scalar<T>(query: string | QueryOptions, values?: any[]) {
-    return getScalar(await this.execute<T[]>(query, values)) as T | null;
-  }
-
-  async update(query: string | QueryOptions, values?: any[]) {
-    return (await this.execute<OkPacket>(query, values))?.affectedRows;
-  }
-
-  commit() {
-    delete this.transaction;
-    return this.connection.commit();
-  }
-
-  [Symbol.dispose]() {
-    if (this.transaction) this.commit();
-    this.connection.release();
-  }
-  beginTransaction() {
-    this.transaction = true;
-    return this.connection.beginTransaction();
-  }
-  rollback() {
-    delete this.transaction;
-    return this.connection.rollback();
-  }
-}
-
-export async function GetConnection() {
-  while (!pool) {
-    await waitFor(() => pool, 'Failed to acquire database connection.', 30000);
-  }
-
-  return new Connection(await pool.getConnection());
+async function SelectAccounts(column: 'owner' | 'group' | 'id', id: number | string) {
+  return db.execute<OxAccountMetadata>(`SELECT * FROM accounts WHERE \`${column}\` = ?`, [id]);
 }
 
 export const db = {
@@ -76,8 +35,17 @@ export const db = {
   },
 };
 
-async function SelectAccounts(column: 'owner' | 'group' | 'id', id: number | string) {
-  return db.execute<OxAccountMetadata>(`SELECT * FROM accounts WHERE \`${column}\` = ?`, [id]);
+export const getScalar = <T>(resp: T[] | null) => {
+  if (resp && resp[0]) for (const key in resp[0]) return resp[0][key] as T;
+  return null;
+}
+
+export async function GetConnection() {
+  while (!pool) {
+    await waitFor(() => pool, 'Failed to acquire database connection.', 30000);
+  }
+
+  return new Connection(await pool.getConnection());
 }
 
 export async function SelectAccount(id: number) {
@@ -100,7 +68,6 @@ export async function SelectDefaultAccountId(column: 'owner' | 'group' | 'id', i
   return await db.column<number>(`SELECT id FROM accounts WHERE \`${column}\` = ? AND isDefault = 1`, [id]);
 }
 
-const selectAccountRole = 'SELECT role FROM accounts_access WHERE accountId = ? AND charId = ?';
 export function SelectAccountRole(accountId: number, charId: number) {
   return db.column<OxAccountUserMetadata['role']>(selectAccountRole, [accountId, charId]);
 }

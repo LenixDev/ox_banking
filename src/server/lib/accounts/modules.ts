@@ -1,17 +1,27 @@
-import { GetGroup, OxAccountPermissions, OxAccountRole } from "@communityox/ox_core";
-import { Connection, db, GetConnection, SelectAccount } from "./db";
-import { getRandomInt } from '@communityox/ox_lib';
-import locales from "./common";
-import { OxAccount, OxPlayer } from "./class";
-import { OxAccountMetadataRow } from "./types";
+import { OxAccountRole, OxAccountPermissions, GetGroup } from "@communityox/ox_core";
+import { OxAccount } from "./class";
+import { OxPlayer } from "../player/class";
+import locales from "../common";
+import { GetConnection, db, SelectAccount } from "../database/modules";
+import { getRandomInt } from "@communityox/ox_lib";
+import { accountRoles } from ".";
+import { Connection } from "../database/class";
 
 const doesAccountExist = 'SELECT 1 FROM accounts WHERE id = ?';
-const addBalance = 'UPDATE accounts SET balance = balance + ? WHERE id = ?';
 const getBalance = 'SELECT balance FROM accounts WHERE id = ?';
+const addBalance = 'UPDATE accounts SET balance = balance + ? WHERE id = ?';
 const removeBalance = 'UPDATE accounts SET balance = balance - ? WHERE id = ?';
 const safeRemoveBalance = `${removeBalance} AND (balance - ?) >= 0`;
 const addTransaction = 'INSERT INTO accounts_transactions (actorId, fromId, toId, amount, message, note, fromBalance, toBalance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
 const selectAccountRole = 'SELECT role FROM accounts_access WHERE accountId = ? AND charId = ?';
+const blacklistedGroupActions = {
+  addUser: true,
+  removeUser: true,
+  manageUser: true,
+  transferOwnership: true,
+  manageAccount: true,
+  closeAccount: true,
+} as Record<keyof OxAccountPermissions, true>;
 
 const GenerateAccountId = async (conn: Connection) => {
   const date = new Date();
@@ -232,27 +242,18 @@ export async function DeleteAccount(accountId: number): Promise<{ success: boole
   return { success: true };
 }
 
-const accountRoles = {} as Record<string, OxAccountPermissions>;
-const blacklistedGroupActions = {
-  addUser: true,
-  removeUser: true,
-  manageUser: true,
-  transferOwnership: true,
-  manageAccount: true,
-  closeAccount: true,
-} as Record<keyof OxAccountPermissions, true>;
-function CheckRolePermission(roleName: OxAccountRole | null, permission: keyof OxAccountPermissions) {
-  if (!roleName) return;
-
-  return accountRoles?.[roleName.toLowerCase()]?.[permission];
-}
-
 export async function CanPerformAction(
   player: OxPlayer,
   accountId: number,
   role: OxAccountRole | null,
   action: keyof OxAccountPermissions,
 ) {
+  const CheckRolePermission = (roleName: OxAccountRole | null, permission: keyof OxAccountPermissions) => {
+    if (!roleName) return;
+
+    return accountRoles?.[roleName.toLowerCase()]?.[permission];
+  }
+
   if (CheckRolePermission(role, action)) return true;
 
   const groupName = (await SelectAccount(accountId))?.group;
@@ -268,25 +269,6 @@ export async function CanPerformAction(
 
   return false;
 }
-
-async function LoadRoles() {
-  const roles = await db.execute<OxAccountMetadataRow>('SELECT * FROM account_roles');
-
-  if (!roles[0]) return;
-
-  roles.forEach((role) => {
-    const roleName = (role.name as string).toLowerCase() as OxAccountRole;
-    delete role.name;
-    delete role.id;
-
-    accountRoles[roleName] = role;
-    GlobalState[`accountRole.${roleName}`] = role;
-  });
-
-  GlobalState['accountRoles'] = Object.keys(accountRoles);
-}
-
-setImmediate(LoadRoles);
 
 export async function UpdateBalance(
   accountId: number,
@@ -414,6 +396,4 @@ export async function UpdateInvoice(
   };
 }
 
-export function PayAccountInvoice(invoiceId: number, charId: number) {
-  return UpdateInvoice(invoiceId, charId);
-}
+export const PayAccountInvoice = (invoiceId: number, charId: number) => UpdateInvoice(invoiceId, charId);
