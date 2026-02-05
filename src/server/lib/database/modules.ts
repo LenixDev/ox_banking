@@ -8,7 +8,7 @@ import './pool'
 
 const selectAccountRole = 'SELECT role FROM accounts_access WHERE accountId = ? AND charId = ?';
 
-async function SelectAccounts(column: 'owner' | 'group' | 'id', id: number | string) {
+const SelectAccounts = async (column: 'owner' | 'group' | 'id', id: number | string) => {
   return db.execute<OxAccountMetadata>(`SELECT * FROM accounts WHERE \`${column}\` = ?`, [id]);
 }
 
@@ -40,7 +40,7 @@ export const getScalar = <T>(resp: T[] | null) => {
   return null;
 }
 
-export async function GetConnection() {
+export const GetConnection = async () => {
   while (!pool) {
     await waitFor(() => pool, 'Failed to acquire database connection.', 30000);
   }
@@ -48,7 +48,7 @@ export async function GetConnection() {
   return new Connection(await pool.getConnection());
 }
 
-export async function SelectAccount(id: number) {
+export const SelectAccount = async (id: number) => {
   return db.single(await SelectAccounts('id', id));
 }
 
@@ -60,23 +60,23 @@ export const SetAccountType = async(accountId: number, type: string): Promise<{ 
   return { success: true };
 }
 
-export function GetCharIdFromStateId(stateId: string) {
+export const GetCharIdFromStateId = async (stateId: string) => {
   return db.column<number>('SELECT charId FROM characters WHERE stateId = ?', [stateId]);
 }
 
-export async function SelectDefaultAccountId(column: 'owner' | 'group' | 'id', id: number | string) {
+export const SelectDefaultAccountId = async (column: 'owner' | 'group' | 'id', id: number | string) => {
   return await db.column<number>(`SELECT id FROM accounts WHERE \`${column}\` = ? AND isDefault = 1`, [id]);
 }
 
-export function SelectAccountRole(accountId: number, charId: number) {
+export const SelectAccountRole = async (accountId: number, charId: number) => {
   return db.column<OxAccountUserMetadata['role']>(selectAccountRole, [accountId, charId]);
 }
 
-export async function UpdateAccountAccess(
+export const UpdateAccountAccess = async (
   accountId: number,
   id: number,
   role?: string,
-): Promise<{ success: boolean; message?: string }> {
+): Promise<{ success: boolean; message?: string }> => {
   if (!role) {
     const success = await db.update('DELETE FROM accounts_access WHERE accountId = ? AND charId = ?', [accountId, id]);
 
