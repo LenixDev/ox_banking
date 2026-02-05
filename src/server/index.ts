@@ -261,30 +261,33 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
     }
     interface GangGradeData extends GroupGradeData {}
 
-    const jobs: Record<JobName, JobData> = exports.qbx_core.GetJobs()
-    const gangs: Record<GangName, GangData>  = exports.qbx_core.GetGangs()
-    const groups = {
-      jobs: jobs,
-      gangs: gangs,
-    }
+    const jobs: Record<JobName, JobData> = await exports.qbx_core.GetJobs()
+    const gangs: Record<GangName, GangData> = await exports.qbx_core.GetGangs()
+
     const invoices = await oxmysql.rawExecute<Invoice[]>(
       `
-      SELECT ai.id, ai.amount, UNIX_TIMESTAMP(ai.dueDate) as dueDate, UNIX_TIMESTAMP(ai.paidAt) as paidAt, CONCAT(a.label, ' - ', IFNULL(co.fullName, g.label)) AS label,
+      SELECT ai.id, ai.amount, UNIX_TIMESTAMP(ai.dueDate) as dueDate, UNIX_TIMESTAMP(ai.paidAt) as paidAt, 
+      a.label, a.owner, a.\`group\`, co.fullName,
       CASE
-          WHEN ai.payerId IS NOT NULL THEN 'paid'
-          WHEN NOW() > ai.dueDate THEN 'overdue'
-          ELSE 'unpaid'
-          END AS status
+        WHEN ai.payerId IS NOT NULL THEN 'paid'
+        WHEN NOW() > ai.dueDate THEN 'overdue'
+        ELSE 'unpaid'
+      END AS status
       FROM accounts_invoices ai
       LEFT JOIN accounts a ON a.id = ai.fromAccount
       LEFT JOIN players co ON (a.owner IS NOT NULL AND co.id = a.owner)
-      LEFT JOIN ox_groups g ON (a.owner IS NULL AND g.name = a.group)
       WHERE ai.toAccount = ?
       ORDER BY ai.id DESC
       LIMIT 5
       `,
       [account.accountId]
     );
+
+    invoices.forEach(invoice => {
+      console.debug(invoice.group)
+      const groupLabel = invoice.group && (jobs[invoice.group]?.label || gangs[invoice.group]?.label);
+      invoice.label = `${invoice.label} - ${invoice.fullName || groupLabel || 'Unknown'}`;
+    });
     console.warn('pass3')
     
     const blnc = await account.get('balance')
