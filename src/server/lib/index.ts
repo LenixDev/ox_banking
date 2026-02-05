@@ -155,17 +155,59 @@ setImmediate(async () => {
   await oxmysql.query(`
     CREATE TABLE IF NOT EXISTS accounts_access (
       accountId INT UNSIGNED NOT NULL,
-      charId INT UNSIGNED NOT NULL,
+      charId INT NOT NULL,
       role VARCHAR(50) NOT NULL DEFAULT 'viewer',
-      PRIMARY KEY (accountId, charId)
+      PRIMARY KEY (accountId, charId),
+      CONSTRAINT accounts_access_accountId_fk FOREIGN KEY (accountId) REFERENCES accounts (id) ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT accounts_access_charId_fk FOREIGN KEY (charId) REFERENCES players (id) ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT FK_accounts_access_account_roles FOREIGN KEY (role) REFERENCES account_roles (name) ON UPDATE CASCADE ON DELETE CASCADE
+    );
+  `);
+  
+  await oxmysql.query(`
+    CREATE TABLE IF NOT EXISTS accounts_transactions (
+      id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      actorId INT DEFAULT NULL,
+      fromId INT UNSIGNED DEFAULT NULL,
+      toId INT UNSIGNED DEFAULT NULL,
+      amount INT NOT NULL,
+      message VARCHAR(255) NOT NULL,
+      note VARCHAR(255) DEFAULT NULL,
+      fromBalance INT DEFAULT NULL,
+      toBalance INT DEFAULT NULL,
+      date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      CONSTRAINT accounts_transactions_actorId_fk FOREIGN KEY (actorId) REFERENCES players (id) ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT accounts_transactions_fromId_fk FOREIGN KEY (fromId) REFERENCES accounts (id) ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT accounts_transactions_toId_fk FOREIGN KEY (toId) REFERENCES accounts (id) ON DELETE CASCADE ON UPDATE CASCADE
+    );
+  `);
+  
+  await oxmysql.query(`
+    CREATE TABLE IF NOT EXISTS accounts_invoices(
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      actorId INT NULL,
+      payerId INT NULL,
+      fromAccount INT UNSIGNED NOT NULL,
+      toAccount INT UNSIGNED NOT NULL,
+      amount INT UNSIGNED NOT NULL,
+      message VARCHAR(255) NULL,
+      sentAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP() NOT NULL,
+      dueDate TIMESTAMP NOT NULL,
+      paidAt TIMESTAMP NULL,
+      CONSTRAINT accounts_invoices_accounts_id_fk
+          FOREIGN KEY (fromAccount) REFERENCES accounts (id),
+      CONSTRAINT accounts_invoices_accounts_id_fk_2
+          FOREIGN KEY (toAccount) REFERENCES accounts (id),
+      CONSTRAINT accounts_invoices_characters_charId_fk
+          FOREIGN KEY (payerId) REFERENCES players (id),
+      CONSTRAINT accounts_invoices_characters_charId_fk_2
+          FOREIGN KEY (actorId) REFERENCES players (id)
     );
   `);
 })
-
-// accounts_access
-// CONSTRAINT accounts_access_accountId_fk FOREIGN KEY (accountId) REFERENCES accounts (id) ON DELETE CASCADE ON UPDATE CASCADE,
-// CONSTRAINT accounts_access_charId_fk FOREIGN KEY (charId) REFERENCES players (cid) ON DELETE CASCADE ON UPDATE CASCADE,
-// CONSTRAINT FK_accounts_access_account_roles FOREIGN KEY (role) REFERENCES account_roles (name) ON UPDATE CASCADE ON DELETE CASCADE
+    
+    // accounts_access
 
 //accounts
 // CONSTRAINT accounts_group_fk
