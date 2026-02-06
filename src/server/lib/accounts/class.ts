@@ -29,7 +29,6 @@ class OxAccount extends ClassInterface {
   async get<T extends keyof OxAccountMetadata>(
     keys: T | T[],
   ): Promise<OxAccountMetadata[T] | Pick<OxAccountMetadata, T> | null> {
-    console.warn(keys)
     const metadata = await SelectAccount(this.accountId)
 
     if (!metadata) return null
