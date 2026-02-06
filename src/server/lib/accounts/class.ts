@@ -6,7 +6,9 @@ import { OxPlayer } from "../player/class";
 import { PerformTransaction, DepositMoney, WithdrawMoney, DeleteAccount } from "./actions";
 import { CanPerformAction } from "./modules";
 
-export class OxAccount extends ClassInterface {
+export { OxAccount, AccountInterface }
+
+class OxAccount extends ClassInterface {
   protected static members: Dict<OxAccount> = {};
   
   static async get(accountId: number) {
@@ -110,6 +112,6 @@ export class OxAccount extends ClassInterface {
   }
 }
 
-export class AccountInterface {
+class AccountInterface {
   constructor(public accountId: number) {}
 }

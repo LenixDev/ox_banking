@@ -7,15 +7,17 @@ import { OxPlayer, PlayerInterface } from './player/class';
 import './database/init'
 import './accounts/init'
 
+export { CreateAccount, GetAccount, GetCharacterAccount, GetPlayer }
+
 // TODO: test when no account found (not created with char creation)
-export const CreateAccount = async (owner: number | string, label: string) => {
+const CreateAccount = async (owner: number | string, label: string) => {
   const accountId = await CreateNewAccount(owner, label);
   const account = await OxAccount.get(accountId);
   if (!account) return;
   return new AccountInterface(account.accountId) as OxAccount;
 }
 
-export const GetAccount = async (accountId: number) => {
+const GetAccount = async (accountId: number) => {
   const account = await OxAccount.get(accountId);
   function get<T extends keyof OxAccountMetadata>(key: T): Promise<OxAccountMetadata[T]>;
   function get<T extends keyof OxAccountMetadata>(keys: T[]): Promise<Pick<OxAccountMetadata, T>>;
@@ -46,13 +48,13 @@ export const GetAccount = async (accountId: number) => {
   }
 }
 
-export async function GetCharacterAccount(id: number | string) {
+async function GetCharacterAccount(id: number | string) {
   const charId = typeof id === 'string' ? await GetCharIdFromStateId(id) : id;
   const accountId = charId && (await SelectDefaultAccountId('owner', charId));
   return accountId ? OxAccount.get(accountId) : null;
 }
 
-export const GetPlayer = (id: string | number) => {
+const GetPlayer = (id: string | number) => {
   const player = OxPlayer.get(id)
   
   if (!player) return;

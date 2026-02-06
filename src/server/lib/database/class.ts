@@ -2,7 +2,9 @@ import { PoolConnection, QueryOptions } from "mariadb/*";
 import { MySqlRow, OkPacket } from "../types";
 import { getScalar } from "./modules";
 
-export class Connection {
+export { Connection }
+
+class Connection {
   public transaction?: boolean;
 
   constructor(public connection: PoolConnection) {}

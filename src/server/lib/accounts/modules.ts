@@ -15,6 +15,8 @@ const blacklistedGroupActions = {
   closeAccount: true,
 } as Record<keyof OxAccountPermissions, true>;
 
+export { CanPerformAction, CreateNewAccount }
+
 const GenerateAccountId = async (conn: Connection) => {
   const date = new Date();
   const year = date.getFullYear().toString().slice(-2);
@@ -29,7 +31,7 @@ const GenerateAccountId = async (conn: Connection) => {
   }
 }
 
-export const CanPerformAction = async (
+const CanPerformAction = async (
   player: OxPlayer,
   accountId: number,
   role: OxAccountRole | null,
@@ -57,7 +59,7 @@ export const CanPerformAction = async (
   return false;
 }
 
-export const CreateNewAccount = async (owner: string | number, label: string, isDefault?: boolean) => {
+const CreateNewAccount = async (owner: string | number, label: string, isDefault?: boolean) => {
   const conn = await GetConnection();
 
   const accountId = await GenerateAccountId(conn);

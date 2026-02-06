@@ -7,11 +7,13 @@ import { Connection } from './class';
 
 const selectAccountRole = 'SELECT role FROM accounts_access WHERE accountId = ? AND charId = ?';
 
+export { db, getScalar, GetConnection, SelectAccount, SetAccountType, GetCharIdFromStateId, SelectDefaultAccountId, SelectAccountRole, UpdateAccountAccess }
+
 const SelectAccounts = async (column: 'owner' | 'group' | 'id', id: number | string) => {
   return db.execute<OxAccountMetadata>(`SELECT * FROM accounts WHERE \`${column}\` = ?`, [id]);
 }
 
-export const db = {
+const db = {
   async execute<T>(query: string | QueryOptions, values?: any[]) {
     const conn = await GetConnection();
     return conn.execute<T extends OkPacket ? OkPacket : T[]>(query, values);
@@ -34,12 +36,12 @@ export const db = {
   },
 };
 
-export const getScalar = <T>(resp: T[] | null) => {
+const getScalar = <T>(resp: T[] | null) => {
   if (resp && resp[0]) for (const key in resp[0]) return resp[0][key] as T;
   return null;
 }
 
-export const GetConnection = async () => {
+const GetConnection = async () => {
   while (!pool) {
     await waitFor(() => pool, 'Failed to acquire database connection.', 30000);
   }
@@ -47,11 +49,11 @@ export const GetConnection = async () => {
   return new Connection(await pool.getConnection());
 }
 
-export const SelectAccount = async (id: number) => {
+const SelectAccount = async (id: number) => {
   return db.single(await SelectAccounts('id', id));
 }
 
-export const SetAccountType = async(accountId: number, type: string): Promise<{ success: boolean; message?: string }> => {
+const SetAccountType = async(accountId: number, type: string): Promise<{ success: boolean; message?: string }> => {
   const success = await db.update('UPDATE `accounts` SET `type` = ? WHERE `id` = ?', [type, accountId]);
 
   if (!success) return { success: false, message: 'update_account_error' };
@@ -59,19 +61,19 @@ export const SetAccountType = async(accountId: number, type: string): Promise<{ 
   return { success: true };
 }
 
-export const GetCharIdFromStateId = async (stateId: string) => {
+const GetCharIdFromStateId = async (stateId: string) => {
   return db.column<number>('SELECT id FROM players WHERE citizenid = ?', [stateId]);
 }
 
-export const SelectDefaultAccountId = async (column: 'owner' | 'group' | 'id', id: number | string) => {
+const SelectDefaultAccountId = async (column: 'owner' | 'group' | 'id', id: number | string) => {
   return await db.column<number>(`SELECT id FROM accounts WHERE \`${column}\` = ? AND isDefault = 1`, [id]);
 }
 
-export const SelectAccountRole = async (accountId: number, charId: number) => {
+const SelectAccountRole = async (accountId: number, charId: number) => {
   return db.column<OxAccountUserMetadata['role']>(selectAccountRole, [accountId, charId]);
 }
 
-export const UpdateAccountAccess = async (
+const UpdateAccountAccess = async (
   accountId: number,
   id: number,
   role?: string,

@@ -5,7 +5,9 @@ import { QBoxPlayer } from "./types";
 
 const ON_PLAYER_LOADED = 'QBCore:Server:OnPlayerLoaded';
 
-export class ClassInterface {
+export { ClassInterface }
+
+class ClassInterface {
   protected static members: Dict<any>;
   protected static keys?: Dict<Dict<any>>;
   protected static callableMethods: Dict<true>;

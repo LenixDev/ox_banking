@@ -2,7 +2,9 @@ import { OxAccountPermissions, OxAccountRole } from "@communityox/ox_core";
 import { db } from "../database/modules";
 import { OxAccountMetadataRow } from "../types";
 
-export const accountRoles = {} as Record<string, OxAccountPermissions>;
+export { accountRoles }
+
+const accountRoles = {} as Record<string, OxAccountPermissions>;
 
 async function LoadRoles() {
   const roles = await db.execute<OxAccountMetadataRow>('SELECT * FROM account_roles');

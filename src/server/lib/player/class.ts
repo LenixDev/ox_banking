@@ -3,7 +3,9 @@ import { ClassInterface } from "../classInterface";
 import { GetCharacterAccount } from "..";
 import { UpdateInvoice } from "../accounts/actions";
 
-export class OxPlayer extends ClassInterface {
+export { OxPlayer, PlayerInterface }
+
+class OxPlayer extends ClassInterface {
   source: number | string;
   charId?: number;
   stateId?: string;
@@ -44,8 +46,7 @@ export class OxPlayer extends ClassInterface {
     return this.keys.charId[id];
   }
 }
-
-export class PlayerInterface {
+class PlayerInterface {
   constructor(
     public source: number,
     public charId: number | undefined,
