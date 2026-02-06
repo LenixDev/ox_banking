@@ -22,7 +22,7 @@ const PerformTransaction = async (
   message?: string,
   note?: string,
   actorId?: number,
-): Promise<{ success: boolean message?: string }> => {
+): Promise<{ success: boolean, message?: string }> => {
   amount = Number.parseInt(String(amount))
 
   if (isNaN(amount)) return { success: false, message: 'amount_not_number' }
@@ -79,7 +79,7 @@ const WithdrawMoney = async (
   amount: number,
   message?: string,
   note?: string,
-): Promise<{ success: boolean message?: string }> => {
+): Promise<{ success: boolean, message?: string }> => {
   amount = Number.parseInt(String(amount))
 
   if (isNaN(amount)) return { success: false, message: 'amount_not_number' }
@@ -133,7 +133,7 @@ const DepositMoney = async (
   amount: number,
   message?: string,
   note?: string,
-): Promise<{ success: boolean message?: string }> => {
+): Promise<{ success: boolean, message?: string }> => {
   amount = Number.parseInt(String(amount))
 
   if (isNaN(amount)) return { success: false, message: 'amount_not_number' }
@@ -191,7 +191,7 @@ const DepositMoney = async (
   }
 }
 
-const DeleteAccount = async (accountId: number): Promise<{ success: boolean message?: string }> => {
+const DeleteAccount = async (accountId: number): Promise<{ success: boolean, message?: string }> => {
   const success = await db.update(`UPDATE accounts SET \`type\` = 'inactive' WHERE id = ?`, [accountId])
 
   if (!success)
@@ -211,7 +211,7 @@ const UpdateBalance = async (
   message?: string,
   note?: string,
   actorId?: number,
-): Promise<{ success: boolean message?: string }> => {
+): Promise<{ success: boolean, message?: string }> => {
   amount = Number.parseInt(String(amount))
 
   if (isNaN(amount)) return { success: false, message: 'amount_not_number' }
@@ -265,12 +265,12 @@ const UpdateBalance = async (
 const UpdateInvoice = async (
   invoiceId: number,
   charId: number,
-): Promise<{ success: boolean message?: string }> => {
+): Promise<{ success: boolean, message?: string }> => {
   const player = OxPlayer.getFromCharId(charId)
 
   if (!player?.charId) return { success: false, message: 'no_charId' }
 
-  const invoice = await db.row<{ amount: number payerId?: number fromAccount: number toAccount: number }>(
+  const invoice = await db.row<{ amount: number, payerId?: number, fromAccount: number, toAccount: number }>(
     'SELECT * FROM `accounts_invoices` WHERE `id` = ?',
     [invoiceId],
   )

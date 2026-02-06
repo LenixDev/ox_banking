@@ -53,7 +53,7 @@ const SelectAccount = async (id: number) => {
   return db.single(await SelectAccounts('id', id))
 }
 
-const SetAccountType = async(accountId: number, type: string): Promise<{ success: boolean message?: string }> => {
+const SetAccountType = async(accountId: number, type: string): Promise<{ success: boolean, message?: string }> => {
   const success = await db.update('UPDATE `accounts` SET `type` = ? WHERE `id` = ?', [type, accountId])
 
   if (!success) return { success: false, message: 'update_account_error' }
@@ -77,7 +77,7 @@ const UpdateAccountAccess = async (
   accountId: number,
   id: number,
   role?: string,
-): Promise<{ success: boolean message?: string }> => {
+): Promise<{ success: boolean, message?: string }> => {
   if (!role) {
     const success = await db.update('DELETE FROM accounts_access WHERE accountId = ? AND charId = ?', [accountId, id])
 
