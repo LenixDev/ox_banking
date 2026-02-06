@@ -14,8 +14,8 @@ import type {
   RawLogItem,
   Transaction,
 } from '../common/typings';
-import Bridge from './lib/bridge';
 import { CreateNewAccount } from './lib/accounts/modules';
+import Bridge from './lib/bridge';
 
 versionCheck('communityox/ox_banking');
 
@@ -27,79 +27,78 @@ if (coreDepCheck !== true) {
     // console.error(coreDepCheck[1]);
   }, 1000);
 }
+
 onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> => {
   const player = GetPlayer(playerId);
+
   if (!player.charId) return;
 
-  const jobs = await Bridge.GetJobs();
-  const gangs = await Bridge.GetGangs();
-
   try {
-    const accessAccounts = await oxmysql.rawExecute<Array<Omit<OxAccountUserMetadata, 'ownerName'> & {
-      charinfo: {
-        firstname: string;
-        lastname: string;
-      }
-      grade: number
-    }>>(
+    const accessAccounts = await oxmysql.rawExecute<OxAccountUserMetadata[]>(
       `
       SELECT DISTINCT
-      access.role,
-      account.*,
-      c.charinfo,
-      pg.grade
-      FROM
-      accounts account
-    LEFT JOIN players c ON account.owner = c.id
-    LEFT JOIN player_groups pg
-      ON pg.citizenid = ?
-      AND pg.\`group\` = account.\`group\`
-    LEFT JOIN accounts_access access
-    ON account.id = access.accountId
-    AND access.charId = ?
-    WHERE
-      account.type != 'inactive'
-      AND (
-        access.charId = ?
-        OR account.\`group\` IS NOT NULL
-      )
-    GROUP BY
-      account.id
-    ORDER BY
-      account.owner = ? DESC,
-      account.isDefault DESC
-    `,
-    [player.stateId, player.charId, player.charId, player.charId]
-  );
-  console.debug(accessAccounts)
+        COALESCE(access.role, gg.accountRole) AS role,
+        account.*,
+        COALESCE(TRIM(CONCAT(
+          IFNULL(p.charinfo->>'$.firstname', ''), 
+          ' ', 
+          IFNULL(p.charinfo->>'$.lastname', '')
+        )), g.label) AS ownerName
+        FROM
+        accounts account
+        LEFT JOIN players p ON account.owner = p.id
+      LEFT JOIN ox_groups g
+        ON account.group = g.name
+      LEFT JOIN character_groups cg
+        ON cg.charId = ?
+        AND cg.name = account.group
+      LEFT JOIN ox_group_grades gg
+        ON account.group = gg.group
+        AND cg.grade = gg.grade
+      LEFT JOIN accounts_access access
+        ON account.id = access.accountId
+        AND access.charId = ?
+        WHERE
+        account.type != 'inactive'
+        AND (
+          access.charId = ?
+          OR (
+            account.group IS NOT NULL
+            AND gg.accountRole IS NOT NULL
+          )
+        )
+      GROUP BY
+        account.id
+        ORDER BY
+        account.owner = ? DESC,
+        account.isDefault DESC
+      `,
+      [player.charId, player.charId, player.charId, player.charId]
+    );
 
-  const accounts: Account[] = accessAccounts
-    .filter(account => {
-      if (account.group && account.grade != null) {
-        const groupData = jobs[account.group] || gangs[account.group];
-        const gradeData = groupData?.grades[account.grade];
-        return gradeData?.bankAuth === true;
+    accessAccounts.forEach(account => {
+      const { role, ownerName } = account
+      if (!role) {
+        account.role = 'temporary'
       }
-      return true;
+      if (!ownerName) {
+        account.ownerName = 'temporary'
+      }
     })
-    .map((account) => {
-      const { firstname, lastname } = account.charinfo;
-      const groupData = account.group && (jobs[account.group] || gangs[account.group]);
-      
-      return {
-        group: account.group,
-        id: account.id,
-        label: account.label,
-        isDefault: player.charId === account.owner ? account.isDefault : false,
-        balance: account.balance,
-        type: account.type,
-        owner: firstname && lastname ? `${firstname} ${lastname}` : groupData?.label,
-        role: account.role,
-      };
-    });
-  
+
+    const accounts: Account[] = accessAccounts.map((account) => ({
+      group: account.group,
+      id: account.id,
+      label: account.label,
+      isDefault: player.charId === account.owner ? account.isDefault : false,
+      balance: account.balance,
+      type: account.type,
+      owner: account.ownerName,
+      role: account.role,
+    }));
+
     return accounts;
-  } catch(errorOccured) { throw new Error(errorOccured) }
+  } catch (errorOccured) { throw new Error(errorOccured) }
 });
 
 onClientCallback('ox_banking:createAccount', async (playerId, { name, shared }: { name: string; shared: boolean }) => {
@@ -211,7 +210,9 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
   }
 
   if (!account) return;
+
   try {
+    const jobs = await Bridge.GetJobs()
     const overview = await oxmysql.rawExecute<
       {
         day: string;
@@ -278,8 +279,9 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
     // does the [ CONCAT(a.label, ' - ', IFNULL(co.fullName, g.label)) AS label ]'s job
     invoices.forEach((invoice) => {
       const { label, fullName, group } = invoice;
-      invoice.label = fullName ? `${label} - ${fullName}` : `${label} - ${group}`
-    });
+      if (fullName) invoice.label = `${label} - ${fullName}`
+      else if (jobs?.[group]) invoice.label = `${label} - ${group}`
+    })
 
     return {
       balance: await account.get('balance'),
