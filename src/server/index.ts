@@ -40,7 +40,7 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
         firstname: string;
         lastname: string;
       }
-      grade: string | number
+      grade: number
     }>>(
       `
       SELECT DISTINCT
@@ -83,9 +83,8 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
       return true;
     })
     .map((account) => {
-      const charinfo = account.charinfo ? JSON.parse(account.charinfo as unknown as string) : null;
+      const { firstname, lastname } = account.charinfo;
       const groupData = account.group && (jobs[account.group] || gangs[account.group]);
-      const gradeData = groupData?.grades[account.grade];
       
       return {
         group: account.group,
@@ -94,11 +93,11 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
         isDefault: player.charId === account.owner ? account.isDefault : false,
         balance: account.balance,
         type: account.type,
-        owner: charinfo ? `${charinfo.firstname} ${charinfo.lastname}` : groupData?.label,
-        role: account.role || gradeData?.name,
+        owner: firstname && lastname ? `${firstname} ${lastname}` : groupData?.label,
+        role: account.role,
       };
     });
-    
+  
     return accounts;
   } catch(errorOccured) { throw new Error(errorOccured) }
 });
