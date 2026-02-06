@@ -16,21 +16,21 @@ export const CreateAccount = async (owner: number | string, label: string) => {
 }
 
 export const GetAccount = async (accountId: number) => {
-  const Ox = await OxAccount.get(accountId);
+  const account = await OxAccount.get(accountId);
   function get<T extends keyof OxAccountMetadata>(key: T): Promise<OxAccountMetadata[T]>;
   function get<T extends keyof OxAccountMetadata>(keys: T[]): Promise<Pick<OxAccountMetadata, T>>;
   function get<T extends keyof OxAccountMetadata>(keys: T | T[]) {
     if (Array.isArray(keys)) {
-      return Ox.get(keys) as Promise<Pick<OxAccountMetadata, T>>;
+      return account.get(keys) as Promise<Pick<OxAccountMetadata, T>>;
     }
-    return Ox.get(keys) as Promise<OxAccountMetadata[T]>;
+    return account.get(keys) as Promise<OxAccountMetadata[T]>;
   }
   return {
     get,
-    playerHasPermission: (playerId: number, permission: keyof OxAccountPermissions) => Ox.playerHasPermission(playerId, permission),
-    deleteAccount: () => Ox.deleteAccount(),
-    depositMoney: (playerId: number, amount: number, message?: string, note?: string) => Ox.depositMoney(playerId, amount, message, note),
-    withdrawMoney: (playerId: number, amount: number, message?: string, note?: string) => Ox.withdrawMoney(playerId, amount, message, note),
+    playerHasPermission: (playerId: number, permission: keyof OxAccountPermissions) => account.playerHasPermission(playerId, permission),
+    deleteAccount: () => account.deleteAccount(),
+    depositMoney: (playerId: number, amount: number, message?: string, note?: string) => account.depositMoney(playerId, amount, message, note),
+    withdrawMoney: (playerId: number, amount: number, message?: string, note?: string) => account.withdrawMoney(playerId, amount, message, note),
     transferBalance: ({
       toId,
       amount,
@@ -38,11 +38,11 @@ export const GetAccount = async (accountId: number) => {
       message,
       note,
       actorId
-    }: TransferAccountBalance) => Ox.transferBalance({toId, amount, overdraw, message, note, actorId}),
-    getCharacterRole: (playerId: number | string) => Ox.getCharacterRole(playerId),
-    setCharacterRole: (playerId: number | string, role: OxAccountRole) => Ox.setCharacterRole(playerId, role),
-    setShared: () => Ox.setShared(),
-    accountId: Ox.accountId
+    }: TransferAccountBalance) => account.transferBalance({toId, amount, overdraw, message, note, actorId}),
+    getCharacterRole: (playerId: number | string) => account.getCharacterRole(playerId),
+    setCharacterRole: (playerId: number | string, role: OxAccountRole) => account.setCharacterRole(playerId, role),
+    setShared: () => account.setShared(),
+    accountId: account.accountId
   }
 }
 
