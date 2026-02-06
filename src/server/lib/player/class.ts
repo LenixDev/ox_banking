@@ -61,5 +61,3 @@ class PlayerInterface {
     return this.charId ? GetCharacterAccount(this.charId) : null
   }
 }
-
-OxPlayer.init()
