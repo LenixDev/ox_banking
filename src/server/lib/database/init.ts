@@ -1,4 +1,4 @@
-import { oxmysql } from "@communityox/oxmysql";
+import { oxmysql } from "@communityox/oxmysql"
 import './pool'
 
 setImmediate(async () => {
@@ -20,7 +20,7 @@ setImmediate(async () => {
       PRIMARY KEY (id),
       UNIQUE INDEX name (name)
     )
-  `);
+  `)
     
   await oxmysql.query(`
     INSERT INTO account_roles (id, name, deposit, withdraw, addUser, removeUser, manageUser, transferOwnership, viewHistory, manageAccount, closeAccount, sendInvoice, payInvoice) VALUES
@@ -29,7 +29,7 @@ setImmediate(async () => {
       (3, 'manager', 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1),
       (4, 'owner', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
     ON DUPLICATE KEY UPDATE id=id
-  `);
+  `)
   
   await oxmysql.query(`
     CREATE TABLE IF NOT EXISTS accounts (
@@ -43,8 +43,8 @@ setImmediate(async () => {
       CONSTRAINT accounts_owner_fk
         FOREIGN KEY (owner) REFERENCES players (id)
           ON UPDATE SET NULL ON DELETE SET NULL
-    ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-  `);
+    ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+  `)
 //@ts-expect-error unused, used to ensures data integrity
 // CONSTRAINT accounts_group_fk
 //         FOREIGN KEY (\`group\`) REFERENCES ox_groups (name)
@@ -59,8 +59,8 @@ setImmediate(async () => {
       CONSTRAINT accounts_access_accountId_fk FOREIGN KEY (accountId) REFERENCES accounts (id) ON DELETE CASCADE ON UPDATE CASCADE,
       CONSTRAINT accounts_access_charId_fk FOREIGN KEY (charId) REFERENCES players (id) ON DELETE CASCADE ON UPDATE CASCADE,
       CONSTRAINT FK_accounts_access_account_roles FOREIGN KEY (role) REFERENCES account_roles (name) ON UPDATE CASCADE ON DELETE CASCADE
-    );
-  `);
+    )
+  `)
   
   await oxmysql.query(`
     CREATE TABLE IF NOT EXISTS accounts_transactions (
@@ -78,8 +78,8 @@ setImmediate(async () => {
       CONSTRAINT accounts_transactions_actorId_fk FOREIGN KEY (actorId) REFERENCES players (id) ON DELETE CASCADE ON UPDATE CASCADE,
       CONSTRAINT accounts_transactions_fromId_fk FOREIGN KEY (fromId) REFERENCES accounts (id) ON DELETE CASCADE ON UPDATE CASCADE,
       CONSTRAINT accounts_transactions_toId_fk FOREIGN KEY (toId) REFERENCES accounts (id) ON DELETE CASCADE ON UPDATE CASCADE
-    );
-  `);
+    )
+  `)
   
   await oxmysql.query(`
     CREATE TABLE IF NOT EXISTS accounts_invoices(
@@ -101,6 +101,6 @@ setImmediate(async () => {
           FOREIGN KEY (payerId) REFERENCES players (id),
       CONSTRAINT accounts_invoices_characters_charId_fk_2
           FOREIGN KEY (actorId) REFERENCES players (id)
-    );
-  `);
+    )
+  `)
 })

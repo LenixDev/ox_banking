@@ -1,21 +1,21 @@
-import { Dict } from '@communityox/ox_core';
-import { createPool, type Pool, type PoolConfig } from 'mariadb';
-export let pool: Pool;
+import { Dict } from '@communityox/ox_core'
+import { createPool, type Pool, type PoolConfig } from 'mariadb'
+export let pool: Pool
 
 const GetConfig = (): PoolConfig => {
   const connectionString = GetConvar('mysql_connection_string', 'mysql://root@localhost').replace(
     'mysql://',
     'mariadb://',
-  );
+  )
 
   function parseUri() {
     const splitMatchGroups = connectionString.match(
       /^(?:([^:\/?#.]+):)?(?:\/\/(?:([^\/?#]*)@)?([\w\d\-\u0100-\uffff.%]*)(?::([0-9]+))?)?([^?#]+)?(?:\?([^#]*))?$/,
-    ) as RegExpMatchArray;
+    ) as RegExpMatchArray
 
-    if (!splitMatchGroups) throw new Error(`mysql_connection_string structure was invalid (${connectionString})`);
+    if (!splitMatchGroups) throw new Error(`mysql_connection_string structure was invalid (${connectionString})`)
 
-    const authTarget = splitMatchGroups[2] ? splitMatchGroups[2].split(':') : [];
+    const authTarget = splitMatchGroups[2] ? splitMatchGroups[2].split(':') : []
 
     return {
       user: authTarget[0] || undefined,
@@ -25,11 +25,11 @@ const GetConfig = (): PoolConfig => {
       database: splitMatchGroups[5].replace(/^\/+/, ''),
       ...(splitMatchGroups[6] &&
         splitMatchGroups[6].split('&').reduce<Dict<string>>((connectionInfo, parameter) => {
-          const [key, value] = parameter.split('=');
-          connectionInfo[key] = value;
-          return connectionInfo;
+          const [key, value] = parameter.split('=')
+          connectionInfo[key] = value
+          return connectionInfo
         }, {})),
-    };
+    }
   }
 
   const options: any = connectionString.includes('mariadb://')
@@ -39,18 +39,18 @@ const GetConfig = (): PoolConfig => {
         .replace(/(?:user\s?(?:id|name)?|uid)=/gi, 'user=')
         .replace(/(?:pwd|pass)=/gi, 'password=')
         .replace(/(?:db)=/gi, 'database=')
-        .split(';')
+        .split('')
         .reduce((connectionInfo: any, parameter: any) => {
-          const [key, value] = parameter.split('=');
-          if (key) connectionInfo[key] = value;
-          return connectionInfo;
-        }, {});
+          const [key, value] = parameter.split('=')
+          if (key) connectionInfo[key] = value
+          return connectionInfo
+        }, {})
 
   if (typeof options.ssl === 'string') {
     try {
-      options.ssl = JSON.parse(options.ssl);
+      options.ssl = JSON.parse(options.ssl)
     } catch (err) {
-      console.log(`^3Failed to parse ssl in configuration (${err})!^0`);
+      console.log(`^3Failed to parse ssl in configuration (${err})!^0`)
     }
   }
 
@@ -66,7 +66,7 @@ const GetConfig = (): PoolConfig => {
     decimalAsNumber: true,
     autoJsonMap: true,
     jsonStrings: false,
-  };
+  }
 }
 
 /**
@@ -79,7 +79,7 @@ const schema = async (pool: Pool) => {
     PRIMARY KEY (userId, token),
     INDEX token (token),
     CONSTRAINT FK_user_tokens_users FOREIGN KEY (userId) REFERENCES users (userId) ON UPDATE CASCADE ON DELETE CASCADE
-  )`);
+  )`)
 
   await pool.query(`CREATE TABLE IF NOT EXISTS banned_users (
     userId INT UNSIGNED NOT NULL,
@@ -88,38 +88,38 @@ const schema = async (pool: Pool) => {
     reason VARCHAR(255),
     PRIMARY KEY (userId),
     CONSTRAINT FK_banned_users_users FOREIGN KEY (userId) REFERENCES users (userId) ON UPDATE CASCADE ON DELETE CASCADE
-  )`);
+  )`)
 }
 
 setImmediate(async () => {
-  const config = GetConfig();
+  const config = GetConfig()
 
   try {
-    const dbPool = createPool(config);
-    const conn = await dbPool.getConnection();
-    const info = conn.info!; // when would info be null? i'm sure we'll find out eventually!
-    const version = info.serverVersion;
+    const dbPool = createPool(config)
+    const conn = await dbPool.getConnection()
+    const info = conn.info! // when would info be null? i'm sure we'll find out eventually!
+    const version = info.serverVersion
     const recommendedDb =
-      'Install MariaDB 11.4+ for the best experience.\n- https://mariadb.com/kb/en/changes-improvements-in-mariadb-11-4/';
+      'Install MariaDB 11.4+ for the best experience.\n- https://mariadb.com/kb/en/changes-improvements-in-mariadb-11-4/'
 
-    conn.release();
+    conn.release()
 
-    if (!version.mariaDb) return console.error(`MySQL ${version?.raw} is not supported. ${recommendedDb}`);
+    if (!version.mariaDb) return console.error(`MySQL ${version?.raw} is not supported. ${recommendedDb}`)
 
-    if (!info.hasMinVersion(11, 4, 0)) return console.error(`${version.raw} is not supported. ${recommendedDb}`);
+    if (!info.hasMinVersion(11, 4, 0)) return console.error(`${version.raw} is not supported. ${recommendedDb}`)
 
-    console.log(`${`^5[${version.raw}]`} ^2Database server connection established!^0`);
+    console.log(`${`^5[${version.raw}]`} ^2Database server connection established!^0`)
 
-    await schema(dbPool);
+    await schema(dbPool)
 
-    pool = dbPool;
+    pool = dbPool
   } catch (err) {
     console.log(
       `^3Unable to establish a connection to the database (${err.code})!\n^1Error ${err.errno}: ${err.message}^0`,
-    );
+    )
 
-    if (config.password) config.password = '******';
+    if (config.password) config.password = '******'
 
-    console.log(config);
+    console.log(config)
   }
-});
+})

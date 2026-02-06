@@ -34,23 +34,23 @@ export interface QBoxPlayer {
     citizenid: string
   }
 }
-export type OxAccountMetadataRow = OxAccountPermissions & { id?: number; name?: OxAccountRole };
+export type OxAccountMetadataRow = OxAccountPermissions & { id?: number, name?: OxAccountRole }
 
 export interface TransferAccountBalance {
-  toId: number;
-  amount: number;
-  overdraw?: boolean;
-  message?: string;
-  note?: string;
-  actorId?: number;
+  toId: number
+  amount: number
+  overdraw?: boolean
+  message?: string
+  note?: string
+  actorId?: number
 }
 
 export interface MySqlRow<T = string | number | boolean | Dict<any> | undefined> {
-  [column: string]: T;
+  [column: string]: T
 }
 
 export interface OkPacket {
-  affectedRows: number;
-  insertId: number;
-  warningStatus: any;
+  affectedRows: number
+  insertId: number
+  warningStatus: any
 }
