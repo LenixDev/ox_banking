@@ -114,3 +114,5 @@ class AccountInterface {
 }
 
 export { OxAccount, AccountInterface }
+
+OxAccount.init()

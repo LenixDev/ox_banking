@@ -1,6 +1,5 @@
 import { Dict } from "@communityox/ox_core"
 import { OxPlayer } from "./player/class"
-import { OxAccount } from "./accounts/class"
 import { QBoxPlayer } from "./types"
 import { GetPlayer } from "."
 import { CreateNewAccount } from "./accounts/modules"
@@ -75,6 +74,3 @@ class ClassInterface {
 }
 
 export { ClassInterface }
-
-OxAccount.init()
-OxPlayer.init()

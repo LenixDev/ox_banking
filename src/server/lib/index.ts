@@ -6,6 +6,7 @@ import { AccountInterface, OxAccount } from './accounts/class'
 import { OxPlayer, PlayerInterface } from './player/class'
 import './database/init'
 import './accounts/init'
+import './init'
 
 // TODO: test when no account found (not created with char creation)
 const CreateAccount = async (owner: number | string, label: string) => {
