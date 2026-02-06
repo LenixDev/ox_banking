@@ -2,6 +2,9 @@ import { Dict } from "@communityox/ox_core"
 import { OxPlayer } from "./player/class"
 import { OxAccount } from "./accounts/class"
 import { QBoxPlayer } from "./types"
+import { GetPlayer } from "."
+import { CreateNewAccount } from "./accounts/modules"
+import { fatal } from "@trippler/tr_lib/shared"
 
 const ON_PLAYER_LOADED = 'QBCore:Server:OnPlayerLoaded'
 
@@ -24,13 +27,27 @@ class ClassInterface {
       })
     }
 
-    onNet(ON_PLAYER_LOADED, async () => {
-      const src = source
-      const { PlayerData: {
-        cid, citizenid
-      } }: QBoxPlayer = await exports.qbx_core.GetPlayer(src)
-      OxPlayer.add(src, new OxPlayer(src, cid, citizenid))
-    })
+    if (this.name === 'OxPlayer') {
+      onNet(ON_PLAYER_LOADED, async () => {
+        const src = source
+        const { PlayerData: {
+          cid, citizenid
+        } }: QBoxPlayer = await exports.qbx_core.GetPlayer(src)
+        
+        OxPlayer.add(src, new OxPlayer(src, cid, citizenid))
+        
+        const player = GetPlayer(src);
+        if (!player?.charId) return;
+        
+        const account = await player.getAccount();
+
+        if (!account) {
+          await CreateNewAccount(player.charId, 'Personal', true);
+          const createdAccount = await player.getAccount();
+          if (!createdAccount) fatal(`Failed to create account for player ${player.charId}.`)
+        }
+      })
+    }
 
     DEV: console.info(`Instantiated ClassInterface<${this.name}>`)
 

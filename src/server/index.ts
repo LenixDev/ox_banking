@@ -211,15 +211,7 @@ onClientCallback(
 );
 
 onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<DashboardData> => {
-  const player = GetPlayer(playerId);
-  if (!player?.charId) return;
-
-  let account = await player.getAccount();
-
-  if (!account) {
-    await CreateNewAccount(player.charId, 'Personal', true);
-    account = await player.getAccount();
-  }
+  const account = await GetPlayer(playerId)?.getAccount();
 
   if (!account) return;
 
