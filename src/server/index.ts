@@ -30,63 +30,73 @@ if (coreDepCheck !== true) {
 
 onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> => {
   const player = GetPlayer(playerId);
-
   if (!player.charId) return;
-
+  
   try {
-    const accessAccounts = await oxmysql.rawExecute<OxAccountUserMetadata[]>(
+    const jobs = await Bridge.GetJobs();
+    
+    const accessAccounts = await oxmysql.rawExecute<Array<OxAccountUserMetadata & { grade: number, group: string }>>(
       `
       SELECT DISTINCT
-        COALESCE(access.role, gg.accountRole) AS role,
+        access.role,
         account.*,
-        COALESCE(TRIM(CONCAT(
+        NULLIF(TRIM(CONCAT(
           IFNULL(p.charinfo->>'$.firstname', ''), 
           ' ', 
           IFNULL(p.charinfo->>'$.lastname', '')
-        )), g.label) AS ownerName
-        FROM
-        accounts account
-        LEFT JOIN players p ON account.owner = p.id
-      LEFT JOIN ox_groups g
-        ON account.group = g.name
-      LEFT JOIN character_groups cg
-        ON cg.charId = ?
-        AND cg.name = account.group
-      LEFT JOIN ox_group_grades gg
-        ON account.group = gg.group
-        AND cg.grade = gg.grade
+        )), '') AS ownerName,
+        pg.grade,
+        pg.group
+      FROM accounts account
+      LEFT JOIN players p ON account.owner = p.id
+      LEFT JOIN player_groups pg
+        ON pg.citizenid = ?
+        AND pg.group = account.group
       LEFT JOIN accounts_access access
         ON account.id = access.accountId
         AND access.charId = ?
-        WHERE
-        account.type != 'inactive'
+      WHERE account.type != 'inactive'
         AND (
           access.charId = ?
           OR (
             account.group IS NOT NULL
-            AND gg.accountRole IS NOT NULL
+            AND pg.grade IS NOT NULL
           )
         )
-      GROUP BY
-        account.id
-        ORDER BY
+      GROUP BY account.id
+      ORDER BY
         account.owner = ? DESC,
         account.isDefault DESC
       `,
-      [player.charId, player.charId, player.charId, player.charId]
+      [player.stateId, player.charId, player.charId, player.charId]
     );
-
+    
+    // process roles and ownerNames
     accessAccounts.forEach(account => {
-      const { role, ownerName } = account
-      if (!role) {
-        account.role = 'temporary'
+      const { role, group, grade, ownerName } = account;
+      // determine role
+      if (!role && group && grade !== null) {
+        const job = jobs[group];
+        const jobGrade = job?.grades?.[grade];
+        
+        if (jobGrade) {
+          account.role = jobGrade.accountRole || (jobGrade.isboss ? 'manager' : 'viewer');
+        }
       }
-      if (!ownerName) {
-        account.ownerName = 'temporary'
+      
+      // set ownerName for groups
+      if (!ownerName && jobs[account.group]) {
+        account.ownerName = jobs[account.group].label || account.group;
       }
-    })
+    });
 
-    const accounts: Account[] = accessAccounts.map((account) => ({
+    // filter out invalid group accounts (matches old gg.accountRole IS NOT NULL logic)
+    const validAccounts = accessAccounts.filter(({ group, role }) => {
+      if (group && !role) return false; // group exists but no valid role
+      return true;
+    });
+    
+    const accounts: Account[] = validAccounts.map((account) => ({
       group: account.group,
       id: account.id,
       label: account.label,
@@ -96,9 +106,11 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
       owner: account.ownerName,
       role: account.role,
     }));
-
+    
     return accounts;
-  } catch (errorOccured) { throw new Error(errorOccured) }
+  } catch (errorOccured) { 
+    throw new Error(errorOccured);
+  }
 });
 
 onClientCallback('ox_banking:createAccount', async (playerId, { name, shared }: { name: string; shared: boolean }) => {
@@ -279,7 +291,9 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
     // does the [ CONCAT(a.label, ' - ', IFNULL(co.fullName, g.label)) AS label ]'s job
     invoices.forEach((invoice) => {
       const { label, fullName, group } = invoice;
+      // set label if the account is an individual account
       if (fullName) invoice.label = `${label} - ${fullName}`
+      // set label if the account is a group account, checking if the group exists ;)
       else if (jobs?.[group]) invoice.label = `${label} - ${group}`
     })
 

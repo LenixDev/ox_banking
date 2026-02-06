@@ -7,6 +7,7 @@ interface GroupGradeData {
   name: string
   isboss: boolean
   bankAuth: boolean
+  accountRole: OxAccountRole
 }
 
 interface GroupStandards<GradeData> {
@@ -17,7 +18,6 @@ interface JobGradeData extends GroupGradeData {
   payment: number
 }
 interface GangGradeData extends GroupGradeData {}
-
 
 interface JobData extends GroupStandards<JobGradeData> {
   type?: string
