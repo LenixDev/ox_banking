@@ -4,7 +4,6 @@ import { OkPacket } from '../types';
 import type { QueryOptions } from 'mariadb';
 import { OxAccountMetadata, OxAccountUserMetadata } from '@communityox/ox_core';
 import { Connection } from './class';
-import './pool'
 
 const selectAccountRole = 'SELECT role FROM accounts_access WHERE accountId = ? AND charId = ?';
 

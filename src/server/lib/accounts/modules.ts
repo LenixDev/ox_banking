@@ -2,7 +2,7 @@ import { OxAccountRole, OxAccountPermissions, GetGroup } from "@communityox/ox_c
 import { OxPlayer } from "../player/class";
 import { GetConnection, SelectAccount } from "../database/modules";
 import { getRandomInt } from "@communityox/ox_lib";
-import { accountRoles } from ".";
+import { accountRoles } from "./init";
 import { Connection } from "../database/class";
 
 const doesAccountExist = 'SELECT 1 FROM accounts WHERE id = ?';

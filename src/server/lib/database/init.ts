@@ -1,4 +1,5 @@
 import { oxmysql } from "@communityox/oxmysql";
+import './pool'
 
 setImmediate(async () => {
   await oxmysql.query(`
