@@ -1,4 +1,4 @@
-import type { OxAccountRole, OxAccountUserMetadata } from '@communityox/ox_core';
+import type { OxAccountRole, OxAccountUserMetadata, OxAccountMetadata } from '@communityox/ox_core';
 import { CreateAccount, GetAccount, GetCharacterAccount, GetPlayer } from './lib';
 import { onClientCallback, versionCheck, checkDependency } from '@communityox/ox_lib/server';
 import { oxmysql } from '@communityox/oxmysql';
@@ -14,8 +14,8 @@ import type {
   RawLogItem,
   Transaction,
 } from '../common/typings';
-import { CreateNewAccount } from './lib/account';
 import Bridge from './lib/bridge';
+import { CreateNewAccount } from './lib/accounts/modules';
 
 versionCheck('communityox/ox_banking');
 
@@ -35,7 +35,13 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
   const gangs = await Bridge.GetGangs();
 
   try {
-    const accessAccounts = await oxmysql.rawExecute<OxAccountUserMetadata[]>(
+    const accessAccounts = await oxmysql.rawExecute<Array<Omit<OxAccountUserMetadata, 'ownerName'> & {
+      charinfo: {
+        firstname: string;
+        lastname: string;
+      }
+      grade: string | number
+    }>>(
       `
       SELECT DISTINCT
       access.role,
@@ -77,7 +83,7 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
       return true;
     })
     .map((account) => {
-      const charinfo = account.charinfo ? JSON.parse(account.charinfo) : null;
+      const charinfo = account.charinfo ? JSON.parse(account.charinfo as unknown as string) : null;
       const groupData = account.group && (jobs[account.group] || gangs[account.group]);
       const gradeData = groupData?.grades[account.grade];
       
@@ -251,7 +257,11 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
       [account.accountId, account.accountId, account.accountId]
     );
 
-    const invoices = await oxmysql.rawExecute<Invoice[]>(
+    const invoices = await oxmysql.rawExecute<Array<Invoice & {
+      owner: string | number;
+      group: string | number;
+      fullName: string;
+    }>>(
       `
       SELECT ai.id, ai.amount, UNIX_TIMESTAMP(ai.dueDate) as dueDate, UNIX_TIMESTAMP(ai.paidAt) as paidAt, 
       a.label, a.owner, a.\`group\`, CONCAT(JSON_UNQUOTE(JSON_EXTRACT(co.charinfo, '$.firstname')), ' ', JSON_UNQUOTE(JSON_EXTRACT(co.charinfo, '$.lastname'))) AS fullName,
