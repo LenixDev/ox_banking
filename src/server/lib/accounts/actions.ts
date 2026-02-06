@@ -12,7 +12,9 @@ const safeRemoveBalance = `${removeBalance} AND (balance - ?) >= 0`;
 const addTransaction = 'INSERT INTO accounts_transactions (actorId, fromId, toId, amount, message, note, fromBalance, toBalance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
 const selectAccountRole = 'SELECT role FROM accounts_access WHERE accountId = ? AND charId = ?';
 
-export const PerformTransaction = async (
+export { PerformTransaction, WithdrawMoney, DepositMoney, DeleteAccount, UpdateBalance, UpdateInvoice }
+
+const PerformTransaction = async (
   fromId: number,
   toId: number,
   amount: number,
@@ -71,7 +73,7 @@ export const PerformTransaction = async (
   return { success: false, message: 'something_went_wrong' };
 }
 
-export const WithdrawMoney = async (
+const WithdrawMoney = async (
   playerId: number,
   accountId: number,
   amount: number,
@@ -125,7 +127,7 @@ export const WithdrawMoney = async (
   return { success: true };
 }
 
-export const DepositMoney = async (
+const DepositMoney = async (
   playerId: number,
   accountId: number,
   amount: number,
@@ -189,7 +191,7 @@ export const DepositMoney = async (
   };
 }
 
-export const DeleteAccount = async (accountId: number): Promise<{ success: boolean; message?: string }> => {
+const DeleteAccount = async (accountId: number): Promise<{ success: boolean; message?: string }> => {
   const success = await db.update(`UPDATE accounts SET \`type\` = 'inactive' WHERE id = ?`, [accountId]);
 
   if (!success)
@@ -201,7 +203,7 @@ export const DeleteAccount = async (accountId: number): Promise<{ success: boole
   return { success: true };
 }
 
-export const UpdateBalance = async (
+const UpdateBalance = async (
   accountId: number,
   amount: number,
   action: 'add' | 'remove',
@@ -260,7 +262,7 @@ export const UpdateBalance = async (
   return { success: true };
 }
 
-export const UpdateInvoice = async (
+const UpdateInvoice = async (
   invoiceId: number,
   charId: number,
 ): Promise<{ success: boolean; message?: string }> => {
