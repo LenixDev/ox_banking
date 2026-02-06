@@ -2,8 +2,6 @@ import { PoolConnection, QueryOptions } from "mariadb/*"
 import { MySqlRow, OkPacket } from "../types"
 import { getScalar } from "./modules"
 
-export { Connection }
-
 class Connection {
   public transaction?: boolean
 
@@ -39,3 +37,5 @@ class Connection {
     return this.connection.rollback()
   }
 }
+
+export { Connection }

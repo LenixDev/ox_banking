@@ -15,8 +15,6 @@ const blacklistedGroupActions = {
   closeAccount: true,
 } as Record<keyof OxAccountPermissions, true>
 
-export { CanPerformAction, CreateNewAccount }
-
 const GenerateAccountId = async (conn: Connection) => {
   const date = new Date()
   const year = date.getFullYear().toString().slice(-2)
@@ -74,3 +72,5 @@ const CreateNewAccount = async (owner: string | number, label: string, isDefault
 
   return accountId
 }
+
+export { CanPerformAction, CreateNewAccount }

@@ -7,8 +7,6 @@ import { OxPlayer, PlayerInterface } from './player/class'
 import './database/init'
 import './accounts/init'
 
-export { CreateAccount, GetAccount, GetCharacterAccount, GetPlayer }
-
 // TODO: test when no account found (not created with char creation)
 const CreateAccount = async (owner: number | string, label: string) => {
   const accountId = await CreateNewAccount(owner, label)
@@ -48,7 +46,7 @@ const GetAccount = async (accountId: number) => {
   }
 }
 
-async function GetCharacterAccount(id: number | string) {
+const GetCharacterAccount = async (id: number | string) => {
   const charId = typeof id === 'string' ? await GetCharIdFromStateId(id) : id
   const accountId = charId && (await SelectDefaultAccountId('owner', charId))
   return accountId ? OxAccount.get(accountId) : null
@@ -66,3 +64,5 @@ const GetPlayer = (id: string | number) => {
     stateId,
   ) as OxPlayer & PlayerInterface
 }
+
+export { CreateAccount, GetAccount, GetCharacterAccount, GetPlayer }

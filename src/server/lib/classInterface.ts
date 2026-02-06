@@ -8,8 +8,6 @@ import { fatal } from "@trippler/tr_lib/shared"
 
 const ON_PLAYER_LOADED = 'QBCore:Server:OnPlayerLoaded'
 
-export { ClassInterface }
-
 class ClassInterface {
   protected static members: Dict<any>
   protected static keys?: Dict<Dict<any>>
@@ -75,6 +73,8 @@ class ClassInterface {
     return this.members[id]
   }
 }
+
+export { ClassInterface }
 
 OxAccount.init()
 OxPlayer.init()
