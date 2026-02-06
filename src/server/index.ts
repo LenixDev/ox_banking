@@ -212,8 +212,6 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
 
   if (!account) return;
   try {
-    const jobs = await Bridge.GetJobs()
-    const gangs = await Bridge.GetGangs()
     const overview = await oxmysql.rawExecute<
       {
         day: string;
@@ -256,33 +254,31 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
       [account.accountId, account.accountId, account.accountId]
     );
 
-    const invoices = await oxmysql.rawExecute<Array<Invoice & {
-      owner: string | number;
-      group: string | number;
-      fullName: string;
-    }>>(
+    const invoices = await oxmysql.rawExecute<Array<Omit<Invoice, 'label'> & { label: string, fullName: string, owner: string, group: string }>>(
       `
-      SELECT ai.id, ai.amount, UNIX_TIMESTAMP(ai.dueDate) as dueDate, UNIX_TIMESTAMP(ai.paidAt) as paidAt, 
-      a.label, a.owner, a.\`group\`, CONCAT(JSON_UNQUOTE(JSON_EXTRACT(co.charinfo, '$.firstname')), ' ', JSON_UNQUOTE(JSON_EXTRACT(co.charinfo, '$.lastname'))) AS fullName,
+      SELECT ai.id, ai.amount, UNIX_TIMESTAMP(ai.dueDate) as dueDate, UNIX_TIMESTAMP(ai.paidAt) as paidAt, a.label, TRIM(CONCAT(
+        IFNULL(po.charinfo->>'$.firstname', ''), 
+        ' ', 
+        IFNULL(po.charinfo->>'$.lastname', '')
+      )) as fullName, a.owner, a.group,
       CASE
-        WHEN ai.payerId IS NOT NULL THEN 'paid'
-        WHEN NOW() > ai.dueDate THEN 'overdue'
-        ELSE 'unpaid'
+          WHEN ai.payerId IS NOT NULL THEN 'paid'
+          WHEN NOW() > ai.dueDate THEN 'overdue'
+          ELSE 'unpaid'
       END AS status
       FROM accounts_invoices ai
       LEFT JOIN accounts a ON a.id = ai.fromAccount
-      LEFT JOIN players co ON (a.owner IS NOT NULL AND co.id = a.owner)
+      LEFT JOIN players po ON (a.owner IS NOT NULL AND po.id = a.owner)
       WHERE ai.toAccount = ?
       ORDER BY ai.id DESC
       LIMIT 5
       `,
       [account.accountId]
     );
-
-    invoices.forEach(invoice => {
-      console.debug(invoice.group)
-      const groupLabel = invoice.group && (jobs[invoice.group]?.label || gangs[invoice.group]?.label);
-      invoice.label = `${invoice.label} - ${invoice.fullName || groupLabel || 'Unknown'}`;
+    // does the [ CONCAT(a.label, ' - ', IFNULL(co.fullName, g.label)) AS label ]'s job
+    invoices.forEach((invoice) => {
+      const { label, fullName, group } = invoice;
+      invoice.label = fullName ? `${label} - ${fullName}` : `${label} - ${group}`
     });
 
     return {
