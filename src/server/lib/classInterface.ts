@@ -28,8 +28,7 @@ export class ClassInterface {
       OxPlayer.add(src, new OxPlayer(src, cid, citizenid));
     });
 
-    const name = this.name;
-    DEV: console.info(`Instantiated ClassInterface<${name}>`);
+    DEV: console.info(`Instantiated ClassInterface<${this.name}>`);
 
     return this;
   }
