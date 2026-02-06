@@ -36,15 +36,13 @@ class ClassInterface {
         
         OxPlayer.add(src, new OxPlayer(src, cid, citizenid))
         
-        const player = GetPlayer(src);
-        if (!player?.charId) return;
-        
-        const account = await player.getAccount();
+        const { charId, getAccount } = GetPlayer(src);
+        if (!charId) return;
 
-        if (!account) {
-          await CreateNewAccount(player.charId, 'Personal', true);
-          const createdAccount = await player.getAccount();
-          if (!createdAccount) fatal(`Failed to create account for player ${player.charId}.`)
+        if (!await getAccount()) {
+          await CreateNewAccount(charId, 'Personal', true);
+          const createdAccount = await getAccount();
+          if (!createdAccount) fatal(`Failed to create account for player ${charId}.`)
         }
       })
     }
