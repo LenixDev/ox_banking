@@ -7,8 +7,6 @@ import { Connection } from './class'
 
 const selectAccountRole = 'SELECT role FROM accounts_access WHERE accountId = ? AND charId = ?'
 
-export { db, getScalar, GetConnection, SelectAccount, SetAccountType, GetCharIdFromStateId, SelectDefaultAccountId, SelectAccountRole, UpdateAccountAccess }
-
 const SelectAccounts = async (column: 'owner' | 'group' | 'id', id: number | string) => {
   return db.execute<OxAccountMetadata>(`SELECT * FROM accounts WHERE \`${column}\` = ?`, [id])
 }
@@ -94,4 +92,16 @@ const UpdateAccountAccess = async (
   if (!success) return { success: false, message: 'something_went_wrong' }
 
   return { success: true }
+}
+
+export { 
+  db,
+  getScalar,
+  GetConnection,
+  SelectAccount,
+  SetAccountType,
+  GetCharIdFromStateId,
+  SelectDefaultAccountId,
+  SelectAccountRole,
+  UpdateAccountAccess
 }

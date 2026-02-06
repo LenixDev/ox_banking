@@ -2,8 +2,6 @@ import { OxAccountPermissions, OxAccountRole } from "@communityox/ox_core"
 import { db } from "../database/modules"
 import { OxAccountMetadataRow } from "../types"
 
-export { accountRoles }
-
 const accountRoles = {} as Record<string, OxAccountPermissions>
 
 async function LoadRoles() {
@@ -22,5 +20,7 @@ async function LoadRoles() {
 
   GlobalState['accountRoles'] = Object.keys(accountRoles)
 }
+
+export { accountRoles }
 
 setImmediate(LoadRoles)

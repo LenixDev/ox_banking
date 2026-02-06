@@ -12,8 +12,6 @@ const safeRemoveBalance = `${removeBalance} AND (balance - ?) >= 0`
 const addTransaction = 'INSERT INTO accounts_transactions (actorId, fromId, toId, amount, message, note, fromBalance, toBalance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
 const selectAccountRole = 'SELECT role FROM accounts_access WHERE accountId = ? AND charId = ?'
 
-export { PerformTransaction, WithdrawMoney, DepositMoney, DeleteAccount, UpdateBalance, UpdateInvoice }
-
 const PerformTransaction = async (
   fromId: number,
   toId: number,
@@ -328,3 +326,5 @@ const UpdateInvoice = async (
     success: true,
   }
 }
+
+export { PerformTransaction, WithdrawMoney, DepositMoney, DeleteAccount, UpdateBalance, UpdateInvoice }

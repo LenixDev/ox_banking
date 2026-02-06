@@ -1,14 +1,9 @@
 import { Dict } from "@communityox/ox_core"
-import { OxPlayer } from "./player/class"
-import { OxAccount } from "./accounts/class"
 import { QBoxPlayer } from "./types"
-import { GetPlayer } from "."
 import { CreateNewAccount } from "./accounts/modules"
 import { fatal } from "@trippler/tr_lib/shared"
 
 const ON_PLAYER_LOADED = 'QBCore:Server:OnPlayerLoaded'
-
-export { ClassInterface }
 
 class ClassInterface {
   protected static members: Dict<any>
@@ -33,6 +28,10 @@ class ClassInterface {
         const { PlayerData: {
           cid, citizenid
         } }: QBoxPlayer = await exports.qbx_core.GetPlayer(src)
+
+        // Dynamic import to avoid circular dependency
+        const { OxPlayer } = await import('./player/class')
+        const { GetPlayer } = await import('./index')
         
         OxPlayer.add(src, new OxPlayer(src, cid, citizenid))
         
@@ -74,5 +73,4 @@ class ClassInterface {
   }
 }
 
-OxAccount.init()
-OxPlayer.init()
+export { ClassInterface }
