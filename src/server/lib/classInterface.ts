@@ -3,6 +3,8 @@ import { OxPlayer } from "./player/class";
 import { OxAccount } from "./accounts/class";
 import { QBoxPlayer } from "./types";
 
+const ON_PLAYER_LOADED = 'QBCore:Server:OnPlayerLoaded';
+
 export class ClassInterface {
   protected static members: Dict<any>;
   protected static keys?: Dict<Dict<any>>;
@@ -20,7 +22,7 @@ export class ClassInterface {
       });
     }
 
-    onNet('QBCore:Server:OnPlayerLoaded', async () => {
+    onNet(ON_PLAYER_LOADED, async () => {
       const src = source
       const { PlayerData: {
         cid, citizenid
