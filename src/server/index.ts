@@ -554,7 +554,7 @@ onClientCallback(
     const search = sanitizeSearch(filters.search);
 
     let dateSearchString = '';
-    let queryParams: any[] = [accountId, accountId, accountId, accountId, accountId, accountId, accountId, accountId];
+    let queryParams: any[] = [accountId, accountId, accountId, accountId, accountId, accountId];
 
     let typeQueryString = ``;
 
@@ -577,7 +577,7 @@ onClientCallback(
     if (filters.date) {
       const date = getFormattedDates(filters.date);
 
-      dateSearchString = `AND (DATE(at.date) BETWEEN ? AND ?)`;
+      dateSearchString = ` AND (DATE(at.date) BETWEEN ? AND ?)`;
       queryParams.push(date.from, date.to);
     }
 
@@ -587,6 +587,8 @@ onClientCallback(
 
     queryParams.push(filters.page * 6);
 
+    console.log(queryParams)
+    console.log(queryWhere)
     const queryData = await oxmysql
       .rawExecute<Array<RawLogItem & {
         fromAccountId: number
@@ -650,8 +652,6 @@ onClientCallback(
       )
       .catch((e) => console.log(e));
 
-    console.debug(queryData)
-    debugger
     if (queryData) queryData.forEach(data => {
       const {
         fromAccountLabel,
@@ -680,6 +680,7 @@ onClientCallback(
         && groups?.[toAccountGroup]
       ) data.toAccountLabel = `${toAccountId} - ${toAccountGroup}`
     });
+    console.debug(queryData)
 
     const totalLogsCount = await oxmysql
       .prepare(
