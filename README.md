@@ -49,3 +49,43 @@ A complete banking system for FiveM for the [ox_core](https://github.com/communi
 ```bash
 npm i -g bun # the last `npm` command you'll ever need
 ```
+
+2. If you want to use precise account roles, you can add to each grade a role, otherwise the system with use `isboss` to determine whether to give the grade a `viewer` role or a `manager` role
+e.g.
+```lua
+['police'] = {
+  label = 'LSPD',
+  type = 'leo',
+  defaultDuty = true,
+  offDutyPay = false,
+  grades = {
+    [0] = {
+      name = 'Recruit',
+      payment = 50,
+      accountRole = 'viewer'
+    },
+    [1] = {
+      name = 'Officer',
+      payment = 75,
+      accountRole = 'viewer'
+    },
+    [2] = {
+      name = 'Sergeant',
+      payment = 100,
+      accountRole = 'contributor'
+    },
+    [3] = {
+      name = 'Lieutenant',
+      payment = 125,
+      accountRole = 'manager'
+    },
+    [4] = {
+      name = 'Chief',
+      isboss = true,
+      bankAuth = true,
+      payment = 150,
+      accountRole = 'owner'
+    },
+  },
+},
+```
