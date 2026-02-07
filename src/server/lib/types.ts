@@ -1,8 +1,5 @@
 import { Dict, OxAccountPermissions, OxAccountRole } from "@communityox/ox_core"
 
-type GroupName = string
-type JobName = GroupName
-type GangName = GroupName
 interface GroupGradeData {
   name: string
   isboss: boolean
@@ -14,20 +11,17 @@ interface GroupStandards<GradeData> {
   label: string
   grades: Record<number, GradeData>
 }
-interface JobGradeData extends GroupGradeData {
-  payment: number
-}
-interface GangGradeData extends GroupGradeData {}
 
-interface JobData extends GroupStandards<JobGradeData> {
+interface JobData extends GroupStandards<GroupGradeData & { payment: number }> {
   type?: string
   defaultDuty: boolean
   offDutyPay: boolean
 }
-interface GangData extends GroupStandards<GangGradeData> {}
+interface GangData extends GroupStandards<GroupGradeData> {}
+export type QboxJobs = Record<string, JobData>
+export type QboxGangs = Record<string, GangData>
+export type QboxGroups = Record<string, GroupStandards<GroupGradeData>>
 
-export type QBXJobs = Record<JobName, JobData>
-export type QBXGangs = Record<GangName, GangData>
 export interface QBoxPlayer {
   PlayerData: {
     cid: number
