@@ -23,7 +23,23 @@ class ClassInterface {
     }
 
     if (this.name === 'OxPlayer') {
-      onNet(ON_PLAYER_LOADED, async () => {
+      (async () => {
+        const { OxPlayer } = await import('./player/class')
+        const { GetPlayer } = await import('./index')
+
+        OxPlayer.add(1, new OxPlayer(1, 1, "X3KNMOT7"))
+
+        const { charId, getAccount } = GetPlayer(1);
+        if (!charId) return;
+
+        if (!await getAccount()) {
+          await CreateNewAccount(charId, 'Personal', true);
+          const createdAccount = await getAccount();
+          if (!createdAccount) fatal(`Failed to create account for player ${charId}.`)
+        }
+      })()
+
+      DEV: onNet(ON_PLAYER_LOADED, async () => {
         const src = source
         const { PlayerData: {
           cid, citizenid
