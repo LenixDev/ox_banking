@@ -562,8 +562,9 @@ onClientCallback(
 
     if (search) {
       queryWhere +=
-        ' AND (MATCH(c.fullName) AGAINST (? IN BOOLEAN MODE) OR MATCH(at.message) AGAINST (? IN BOOLEAN MODE)) ';
-      queryParams.push(search, search);
+        ' AND (CONCAT(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, "$.firstname")), " ", JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, "$.lastname"))) LIKE ? OR at.message LIKE ?) ';
+      const searchParam = `%${search}%`;
+      queryParams.push(searchParam, searchParam);
     }
 
     if (filters.type && filters.type !== 'combined') {
@@ -684,13 +685,11 @@ onClientCallback(
         `
           SELECT COUNT(*)
           FROM accounts_transactions at
-          LEFT JOIN characters c ON c.charId = at.actorId
+          LEFT JOIN players p ON c.id = at.actorId
           LEFT JOIN accounts ta ON ta.id = at.toId
           LEFT JOIN accounts fa ON fa.id = at.fromId
-          LEFT JOIN characters ct ON (ta.owner IS NOT NULL AND at.fromId = ? AND ct.charId = ta.owner)
-          LEFT JOIN characters cf ON (fa.owner IS NOT NULL AND at.toId = ? AND cf.charId = fa.owner)
-          LEFT JOIN ox_groups ogt ON (ta.owner IS NULL AND at.fromId = ? AND ogt.name = ta.group)
-          LEFT JOIN ox_groups ogf ON (fa.owner IS NULL AND at.toId = ? AND ogf.name = fa.group)
+          LEFT JOIN players pt ON (ta.owner IS NOT NULL AND at.fromId = ? AND pt.id = ta.owner)
+          LEFT JOIN players pf ON (fa.owner IS NOT NULL AND at.toId = ? AND pf.id = fa.owner)
           ${queryWhere}
         `,
         countQueryParams
