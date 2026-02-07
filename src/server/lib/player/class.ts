@@ -3,8 +3,6 @@ import { ClassInterface } from "../classInterface"
 import { GetCharacterAccount } from ".."
 import { UpdateInvoice } from "../accounts/actions"
 
-export { OxPlayer, PlayerInterface }
-
 class OxPlayer extends ClassInterface {
   source: number | string
   charId?: number
@@ -58,6 +56,9 @@ class PlayerInterface {
   }
 
   async getAccount() {
+    console.warn(this)
     return this.charId ? GetCharacterAccount(this.charId) : null
   }
 }
+
+export { OxPlayer, PlayerInterface }
