@@ -63,7 +63,7 @@ const GetPlayer = (id: string | number) => {
     source as number,
     charId,
     stateId,
-  ) as OxPlayer & PlayerInterface
+  )
 }
 
 export { CreateAccount, GetAccount, GetCharacterAccount, GetPlayer }
