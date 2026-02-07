@@ -58,7 +58,7 @@ const CanPerformAction = async (
 }
 
 const CreateNewAccount = async (owner: string | number, label: string, isDefault?: boolean) => {
-  const conn = await GetConnection()
+  using conn = await GetConnection()
 
   const accountId = await GenerateAccountId(conn)
   const column = typeof owner === 'string' ? 'group' : 'owner'
