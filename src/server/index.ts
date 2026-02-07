@@ -603,7 +603,6 @@ onClientCallback(
             at.toId,
             at.message,
             at.amount,
-
             fa.id AS fromAccountId,
             NULLIF(CONCAT(fa.id, ' - ', NULLIF(TRIM(CONCAT(
               IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pf.charinfo, '$.firstname')), ''), 
@@ -612,22 +611,22 @@ onClientCallback(
             )), '')), fa.id) AS fromAccountLabel,
             fa.owner As fromAccountOwner,
             fa.group AS fromAccountGroup,
-
             ta.id As toAccountId,
-            NULLIF(CONCAT(ta.id, ' - ', NULLIF(TRIM(CONCAT(
-              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pt.charinfo, '$.firstname')), ''), 
-              ' ', 
-              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pt.charinfo, '$.lastname')), '')
-            )), '')), ta.id) AS toAccountLabel,
+            NULLIF(CONCAT(ta.id, ' - ', 
+                NULLIF(TRIM(CONCAT(
+                    IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pt.charinfo, '$.firstname')), ''), 
+                    ' ', 
+                    IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pt.charinfo, '$.lastname')), '')
+                )), '')
+            ), ta.id) AS toAccountLabel,
             UNIX_TIMESTAMP(at.date) AS date,
             ta.owner As toAccountOwner,
             ta.group As toAccountGroup,
-
             NULLIF(TRIM(CONCAT(
-              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pt.charinfo, '$.firstname')), ''), 
-              ' ', 
-              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pt.charinfo, '$.lastname')), '')
-            )), '')) AS name,
+                IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pt.charinfo, '$.firstname')), ''), 
+                ' ', 
+                IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pt.charinfo, '$.lastname')), '')
+            )), '') AS name,
             CASE
               WHEN at.toId = ? THEN 'inbound'
               ELSE 'outbound'
@@ -651,6 +650,8 @@ onClientCallback(
       )
       .catch((e) => console.log(e));
 
+    console.debug(queryData)
+    debugger
     if (queryData) queryData.forEach(data => {
       const {
         fromAccountLabel,
@@ -685,7 +686,7 @@ onClientCallback(
         `
           SELECT COUNT(*)
           FROM accounts_transactions at
-          LEFT JOIN players p ON c.id = at.actorId
+          LEFT JOIN players p ON p.id = at.actorId
           LEFT JOIN accounts ta ON ta.id = at.toId
           LEFT JOIN accounts fa ON fa.id = at.fromId
           LEFT JOIN players pt ON (ta.owner IS NOT NULL AND at.fromId = ? AND pt.id = ta.owner)
@@ -696,6 +697,7 @@ onClientCallback(
       )
       .catch((e) => console.log(e));
 
+    console.debug(totalLogsCount)
     return {
       numberOfPages: Math.ceil(totalLogsCount / 6),
       logs: queryData,
