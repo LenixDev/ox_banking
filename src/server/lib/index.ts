@@ -2,7 +2,7 @@ import { GetCharIdFromStateId, SelectDefaultAccountId } from './database/modules
 import { OxAccountMetadata, OxAccountPermissions, OxAccountRole } from '@communityox/ox_core'
 import { TransferAccountBalance } from './types'
 import { CreateNewAccount } from './accounts/modules'
-import { AccountInterface, OxAccount } from './accounts/class'
+import { OxAccount } from './accounts/class'
 import { OxPlayer, PlayerInterface } from './player/class'
 import './database/init'
 import './accounts/init'
@@ -13,7 +13,7 @@ const CreateAccount = async (owner: number | string, label: string) => {
   const accountId = await CreateNewAccount(owner, label)
   const account = await OxAccount.get(accountId)
   if (!account) return
-  return new AccountInterface(account.accountId) as OxAccount
+  return account
 }
 
 const GetAccount = async (accountId: number) => {
