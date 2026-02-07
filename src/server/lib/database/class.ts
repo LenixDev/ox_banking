@@ -2,6 +2,8 @@ import { PoolConnection, QueryOptions } from "mariadb/*"
 import { MySqlRow, OkPacket } from "../types"
 import { getScalar } from "./modules"
 
+(Symbol as any).dispose ??= Symbol('Symbol.dispose');
+
 class Connection {
   public transaction?: boolean
 
@@ -23,11 +25,6 @@ class Connection {
     delete this.transaction
     return this.connection.commit()
   }
-
-  [Symbol.dispose]() {
-    if (this.transaction) this.commit()
-    this.connection.release()
-  }
   beginTransaction() {
     this.transaction = true
     return this.connection.beginTransaction()
@@ -35,6 +32,11 @@ class Connection {
   rollback() {
     delete this.transaction
     return this.connection.rollback()
+  }
+
+  [Symbol.dispose]() {
+    if (this.transaction) this.commit()
+    this.connection.release()
   }
 }
 

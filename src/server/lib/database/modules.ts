@@ -13,7 +13,7 @@ const SelectAccounts = async (column: 'owner' | 'group' | 'id', id: number | str
 
 const db = {
   async execute<T>(query: string | QueryOptions, values?: any[]) {
-    const conn = await GetConnection()
+    using conn = await GetConnection()
     return conn.execute<T extends OkPacket ? OkPacket : T[]>(query, values)
   },
   async column<T>(query: string | QueryOptions, values?: any[]) {
@@ -49,6 +49,7 @@ const GetConnection = async () => {
 
 const SelectAccount = async (id: number) => {
   const result = db.single(await SelectAccounts('id', id))
+  console.log(result)
   return result
 }
 
