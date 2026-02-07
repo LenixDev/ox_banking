@@ -15,7 +15,7 @@ import type {
   Transaction,
 } from '../common/typings';
 import Bridge from './lib/bridge';
-import { trace } from '@trippler/tr_lib/shared';
+import { info } from '@trippler/tr_lib/shared';
 
 versionCheck('communityox/ox_banking');
 
@@ -79,11 +79,11 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
         const groupGrade = group?.grades?.[grade];
 
         if (groupGrade) account.role = groupGrade.accountRole || (groupGrade.isboss ? 'manager' : 'viewer');
-      } else trace('Something you need to double check')
+      } else info('Something you need to double check')
       
       // set ownerName for groups
       if (!ownerName && (group)) account.ownerName = account.group;
-      else trace('Something you need to double check')
+      else info('Something you need to double check')
     });
 
     // filter out invalid group accounts (matches old gg.accountRole IS NOT NULL logic)
@@ -285,7 +285,7 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
       if (fullName) invoice.label = `${label} - ${fullName}`
       // set label if the account is a group account, checking if the group exists ;)
       else if (groups?.[group]) invoice.label = `${label} - ${group}`
-      else trace('Something you need to double check')
+      else info('Something you need to double check')
     })
 
     return {
