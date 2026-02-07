@@ -48,9 +48,7 @@ const GetConnection = async () => {
 }
 
 const SelectAccount = async (id: number) => {
-  const result = db.single(await SelectAccounts('id', id))
-  console.log(result)
-  return result
+  return db.single(await SelectAccounts('id', id))
 }
 
 const SetAccountType = async(accountId: number, type: string): Promise<{ success: boolean, message?: string }> => {

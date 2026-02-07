@@ -40,9 +40,9 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
         access.role,
         account.*,
         NULLIF(TRIM(CONCAT(
-          IFNULL(p.charinfo->>'$.firstname', ''), 
+          IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.firstname')), ''), 
           ' ', 
-          IFNULL(p.charinfo->>'$.lastname', '')
+          IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.lastname')), '')
         )), '') AS ownerName,
         pg.grade,
         pg.group
@@ -290,10 +290,8 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
       else if (jobs?.[group]) invoice.label = `${label} - ${group}`
     })
 
-    const blnc = await account.get('balance')
-    console.warn(blnc)
     return {
-      balance: blnc,
+      balance: await account.get('balance'),
       overview,
       transactions,
       invoices,
