@@ -49,6 +49,7 @@ class OxAccount extends ClassInterface {
   }
 
   async setShared() {
+    console.info(this.accountId)
     return SetAccountType(this.accountId, 'shared')
   }
 
@@ -109,8 +110,4 @@ class OxAccount extends ClassInterface {
   }
 }
 
-class AccountInterface {
-  constructor(public accountId: number) {}
-}
-
-export { OxAccount, AccountInterface }
+export { OxAccount }
