@@ -33,8 +33,7 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
   if (!player.charId) return;
   
   try {
-    const jobs = await Bridge.GetJobs();
-    
+    const groups = await Bridge.GetGroups()    
     const accessAccounts = await oxmysql.rawExecute<Array<OxAccountUserMetadata & { grade: number, group: string }>>(
       `
       SELECT DISTINCT
@@ -73,17 +72,17 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
     
     // process roles and ownerNames
     accessAccounts.forEach(account => {
-      const { role, group, grade, ownerName } = account;
+      const { role, group: accountGroup, grade, ownerName } = account;
       // determine role
-      if (!role && group && grade !== null) {
-        const job = jobs?.[group];
-        const jobGrade = job?.grades?.[grade];
-        
-        if (jobGrade) account.role = jobGrade.accountRole || (jobGrade.isboss ? 'manager' : 'viewer');
+      const group = groups[accountGroup]
+      if (!role && accountGroup && grade !== null) {
+        const groupGrade = group?.grades?.[grade];
+
+        if (groupGrade) account.role = groupGrade.accountRole || (groupGrade.isboss ? 'manager' : 'viewer');
       } else trace('Something to need to double check')
       
       // set ownerName for groups
-      if (!ownerName && jobs?.[account.group]) account.ownerName = account.group;
+      if (!ownerName && (group)) account.ownerName = account.group;
       else trace('Something to need to double check')
     });
 
@@ -213,7 +212,7 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
   if (!account) return;
 
   try {
-    const jobs = await Bridge.GetJobs()
+    const groups = await Bridge.GetGroups()
     const overview = await oxmysql.rawExecute<
       {
         day: string;
@@ -259,11 +258,11 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
     const invoices = await oxmysql.rawExecute<Array<Omit<Invoice, 'label'> & { label: string, fullName: string, owner: string, group: string }>>(
       `
       SELECT ai.id, ai.amount, UNIX_TIMESTAMP(ai.dueDate) as dueDate, UNIX_TIMESTAMP(ai.paidAt) as paidAt, a.label, 
-      TRIM(CONCAT(
-          IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.firstname')), ''), 
-          ' ', 
-          IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.lastname')), '')
-      )) as fullName, 
+      NULLIF(TRIM(CONCAT(
+        IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.firstname')), ''), 
+        ' ', 
+        IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.lastname')), '')
+      )), '') as fullName
       a.owner, a.group,
       CASE
           WHEN ai.payerId IS NOT NULL THEN 'paid'
@@ -285,7 +284,7 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
       // set label if the account is an individual account
       if (fullName) invoice.label = `${label} - ${fullName}`
       // set label if the account is a group account, checking if the group exists ;)
-      else if (jobs?.[group]) invoice.label = `${label} - ${group}`
+      else if (groups?.[group]) invoice.label = `${label} - ${group}`
       else trace('Something to need to double check')
     })
 
@@ -548,6 +547,7 @@ onClientCallback(
   async (playerId, { accountId, filters }: { accountId: number; filters: LogsFilters }) => {
     const account = await GetAccount(accountId);
     const hasPermission = await account?.playerHasPermission(playerId, 'viewHistory');
+    const groups = await Bridge.GetGroups()
 
     if (!hasPermission) return;
 
@@ -587,7 +587,13 @@ onClientCallback(
     queryParams.push(filters.page * 6);
 
     const queryData = await oxmysql
-      .rawExecute<RawLogItem[]>(
+      .rawExecute<Array<Omit<RawLogItem, 'name'> & {
+        fromAccountId: number
+        fromAccountOwner: number
+        fromAccountGroup: string
+        toAccountOwner: number
+        charInfo: { firstname: string, lastname: string }
+      }>>(
         `
           SELECT
             at.id,
@@ -595,10 +601,23 @@ onClientCallback(
             at.toId,
             at.message,
             at.amount,
-            CONCAT(fa.id, ' - ', IFNULL(cf.fullName, ogf.label)) AS fromAccountLabel,
-            CONCAT(ta.id, ' - ', IFNULL(ct.fullName, ogt.label)) AS toAccountLabel,
+            fa.id AS fromAccountId,
+            CONCAT(fa.id, ' - ', IFNULL(NULLIF(TRIM(CONCAT(
+              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.firstname')), ''), 
+              ' ', 
+              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.lastname')), '')
+            )), ''), ogf.label)) AS fromAccountLabel,
+            fa.owner As fromAccountOwner
+            at.toId As toAccountOwner
+            fa.group AS fromAccountGroup
+            CONCAT(ta.id, ' - ', IFNULL(NULLIF(TRIM(CONCAT(
+              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.firstname')), ''), 
+              ' ', 
+              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.lastname')), '')
+            )), ''), ogt.label)) AS toAccountLabel,
+            ta.id AS toAccountId,
             UNIX_TIMESTAMP(at.date) AS date,
-            c.fullName AS name,
+            c.charinfo AS charInfo,
             CASE
               WHEN at.toId = ? THEN 'inbound'
               ELSE 'outbound'
@@ -608,11 +627,11 @@ onClientCallback(
                 ELSE at.fromBalance
             END AS newBalance
           FROM accounts_transactions at
-          LEFT JOIN characters c ON c.charId = at.actorId
+          LEFT JOIN players p ON o.id = at.actorId
           LEFT JOIN accounts ta ON ta.id = at.toId
           LEFT JOIN accounts fa ON fa.id = at.fromId
-          LEFT JOIN characters ct ON (ta.owner IS NOT NULL AND at.fromId = ? AND ct.charId = ta.owner)
-          LEFT JOIN characters cf ON (fa.owner IS NOT NULL AND at.toId = ? AND cf.charId = fa.owner)
+          LEFT JOIN players pt ON (ta.owner IS NOT NULL AND at.fromId = ? AND pt.id = ta.owner)
+          LEFT JOIN players pf ON (fa.owner IS NOT NULL AND at.toId = ? AND pf.id = fa.owner)
           LEFT JOIN ox_groups ogt ON (ta.owner IS NULL AND at.fromId = ? AND ogt.name = ta.group)
           LEFT JOIN ox_groups ogf ON (fa.owner IS NULL AND at.toId = ? AND ogf.name = fa.group)
           ${queryWhere}
@@ -623,6 +642,23 @@ onClientCallback(
         queryParams
       )
       .catch((e) => console.log(e));
+
+    if (queryData) queryData.forEach(data => {
+      const { fromAccountLabel } = data
+      const {
+        fromAccountId,
+        fromAccountOwner,
+        fromAccountGroup,
+        toAccountOwner,
+      } = data
+      if (!fromAccountLabel) {
+        if (fromAccountOwner) {
+          if (toAccountOwner == queryParams[5]) {
+            if (groups?.[fromAccountGroup]) data.fromAccountLabel = `${fromAccountId} - ${fromAccountGroup}`
+          }
+        }
+      }
+    });
 
     const totalLogsCount = await oxmysql
       .prepare(
