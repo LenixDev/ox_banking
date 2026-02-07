@@ -1,4 +1,4 @@
-import type { OxAccountRole, OxAccountUserMetadata, OxAccountMetadata } from '@communityox/ox_core';
+import type { OxAccountRole, OxAccountUserMetadata } from '@communityox/ox_core';
 import { CreateAccount, GetAccount, GetCharacterAccount, GetPlayer } from './lib';
 import { onClientCallback, versionCheck, checkDependency } from '@communityox/ox_lib/server';
 import { oxmysql } from '@communityox/oxmysql';
@@ -14,7 +14,6 @@ import type {
   RawLogItem,
   Transaction,
 } from '../common/typings';
-import { CreateNewAccount } from './lib/accounts/modules';
 import Bridge from './lib/bridge';
 
 versionCheck('communityox/ox_banking');
