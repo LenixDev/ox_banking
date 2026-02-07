@@ -260,11 +260,13 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
 
     const invoices = await oxmysql.rawExecute<Array<Omit<Invoice, 'label'> & { label: string, fullName: string, owner: string, group: string }>>(
       `
-      SELECT ai.id, ai.amount, UNIX_TIMESTAMP(ai.dueDate) as dueDate, UNIX_TIMESTAMP(ai.paidAt) as paidAt, a.label, TRIM(CONCAT(
-        IFNULL(po.charinfo->>'$.firstname', ''), 
-        ' ', 
-        IFNULL(po.charinfo->>'$.lastname', '')
-      )) as fullName, a.owner, a.group,
+      SELECT ai.id, ai.amount, UNIX_TIMESTAMP(ai.dueDate) as dueDate, UNIX_TIMESTAMP(ai.paidAt) as paidAt, a.label, 
+      TRIM(CONCAT(
+          IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.firstname')), ''), 
+          ' ', 
+          IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.lastname')), '')
+      )) as fullName, 
+      a.owner, a.group,
       CASE
           WHEN ai.payerId IS NOT NULL THEN 'paid'
           WHEN NOW() > ai.dueDate THEN 'overdue'
@@ -288,8 +290,10 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
       else if (jobs?.[group]) invoice.label = `${label} - ${group}`
     })
 
+    const blnc = await account.get('balance')
+    console.warn(blnc)
     return {
-      balance: await account.get('balance'),
+      balance: blnc,
       overview,
       transactions,
       invoices,
