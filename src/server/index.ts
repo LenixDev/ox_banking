@@ -587,12 +587,13 @@ onClientCallback(
     queryParams.push(filters.page * 6);
 
     const queryData = await oxmysql
-      .rawExecute<Array<Omit<RawLogItem, 'name'> & {
+      .rawExecute<Array<RawLogItem & {
         fromAccountId: number
         fromAccountOwner: number
         fromAccountGroup: string
         toAccountOwner: number
-        charInfo: { firstname: string, lastname: string }
+        toAccountGroup: string
+        toAccountId: number
       }>>(
         `
           SELECT
@@ -601,23 +602,31 @@ onClientCallback(
             at.toId,
             at.message,
             at.amount,
+
             fa.id AS fromAccountId,
-            CONCAT(fa.id, ' - ', IFNULL(NULLIF(TRIM(CONCAT(
-              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.firstname')), ''), 
+            NULLIF(CONCAT(fa.id, ' - ', NULLIF(TRIM(CONCAT(
+              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pf.charinfo, '$.firstname')), ''), 
               ' ', 
-              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.lastname')), '')
-            )), ''), ogf.label)) AS fromAccountLabel,
-            fa.owner As fromAccountOwner
-            at.toId As toAccountOwner
-            fa.group AS fromAccountGroup
-            CONCAT(ta.id, ' - ', IFNULL(NULLIF(TRIM(CONCAT(
-              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.firstname')), ''), 
+              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pf.charinfo, '$.lastname')), '')
+            )), '')), fa.id) AS fromAccountLabel,
+            fa.owner As fromAccountOwner,
+            fa.group AS fromAccountGroup,
+
+            ta.id As toAccountId,
+            NULLIF(CONCAT(ta.id, ' - ', NULLIF(TRIM(CONCAT(
+              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pt.charinfo, '$.firstname')), ''), 
               ' ', 
-              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.lastname')), '')
-            )), ''), ogt.label)) AS toAccountLabel,
-            ta.id AS toAccountId,
+              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pt.charinfo, '$.lastname')), '')
+            )), '')), ta.id) AS toAccountLabel,
             UNIX_TIMESTAMP(at.date) AS date,
-            c.charinfo AS charInfo,
+            ta.owner As toAccountOwner,
+            ta.group As toAccountGroup,
+
+            NULLIF(TRIM(CONCAT(
+              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pt.charinfo, '$.firstname')), ''), 
+              ' ', 
+              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pt.charinfo, '$.lastname')), '')
+            )), '')) AS name,
             CASE
               WHEN at.toId = ? THEN 'inbound'
               ELSE 'outbound'
@@ -627,13 +636,11 @@ onClientCallback(
                 ELSE at.fromBalance
             END AS newBalance
           FROM accounts_transactions at
-          LEFT JOIN players p ON o.id = at.actorId
+          LEFT JOIN players p ON p.id = at.actorId
           LEFT JOIN accounts ta ON ta.id = at.toId
           LEFT JOIN accounts fa ON fa.id = at.fromId
           LEFT JOIN players pt ON (ta.owner IS NOT NULL AND at.fromId = ? AND pt.id = ta.owner)
           LEFT JOIN players pf ON (fa.owner IS NOT NULL AND at.toId = ? AND pf.id = fa.owner)
-          LEFT JOIN ox_groups ogt ON (ta.owner IS NULL AND at.fromId = ? AND ogt.name = ta.group)
-          LEFT JOIN ox_groups ogf ON (fa.owner IS NULL AND at.toId = ? AND ogf.name = fa.group)
           ${queryWhere}
           ORDER BY at.id DESC
           LIMIT 6
@@ -644,20 +651,32 @@ onClientCallback(
       .catch((e) => console.log(e));
 
     if (queryData) queryData.forEach(data => {
-      const { fromAccountLabel } = data
       const {
+        fromAccountLabel,
         fromAccountId,
         fromAccountOwner,
         fromAccountGroup,
+        toId,
+        toAccountLabel,
         toAccountOwner,
+        fromId,
+        toAccountGroup,
+        toAccountId
       } = data
-      if (!fromAccountLabel) {
-        if (fromAccountOwner) {
-          if (toAccountOwner == queryParams[5]) {
-            if (groups?.[fromAccountGroup]) data.fromAccountLabel = `${fromAccountId} - ${fromAccountGroup}`
-          }
-        }
-      }
+      // does the [ CONCAT(fa.id, ' - ', IFNULL(cf.fullName, ogf.label)) AS fromAccountLabel ]'s job
+      if (
+        !fromAccountLabel
+        && fromAccountOwner
+        && toId == queryParams[5]
+        && groups?.[fromAccountGroup]
+      ) data.fromAccountLabel = `${fromAccountId} - ${fromAccountGroup}`
+      // does the [ CONCAT(ta.id, ' - ', IFNULL(ct.fullName, ogt.label)) AS toAccountLabel ]'s job
+      if (
+        !toAccountLabel
+        && toAccountOwner
+        && fromId == queryParams[4]
+        && groups?.[toAccountGroup]
+      ) data.toAccountLabel = `${toAccountId} - ${toAccountGroup}`
     });
 
     const totalLogsCount = await oxmysql
