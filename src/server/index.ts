@@ -79,11 +79,11 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
         const groupGrade = group?.grades?.[grade];
 
         if (groupGrade) account.role = groupGrade.accountRole || (groupGrade.isboss ? 'manager' : 'viewer');
-      } else trace('Something to need to double check')
+      } else trace('Something you need to double check')
       
       // set ownerName for groups
       if (!ownerName && (group)) account.ownerName = account.group;
-      else trace('Something to need to double check')
+      else trace('Something you need to double check')
     });
 
     // filter out invalid group accounts (matches old gg.accountRole IS NOT NULL logic)
@@ -262,7 +262,7 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
         IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.firstname')), ''), 
         ' ', 
         IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.lastname')), '')
-      )), '') as fullName
+      )), '') as fullName,
       a.owner, a.group,
       CASE
           WHEN ai.payerId IS NOT NULL THEN 'paid'
@@ -285,7 +285,7 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
       if (fullName) invoice.label = `${label} - ${fullName}`
       // set label if the account is a group account, checking if the group exists ;)
       else if (groups?.[group]) invoice.label = `${label} - ${group}`
-      else trace('Something to need to double check')
+      else trace('Something you need to double check')
     })
 
     return {
