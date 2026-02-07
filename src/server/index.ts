@@ -475,7 +475,7 @@ onClientCallback(
         message: 'no_permission',
       };
 
-    const targetCharId = await oxmysql.prepare<number | null>('SELECT `charId` FROM `characters` WHERE `stateId` = ?', [
+    const targetCharId = await oxmysql.prepare<number | null>('SELECT `id` FROM `players` WHERE `citizenid` = ?', [
       targetStateId,
     ]);
 
