@@ -49,14 +49,9 @@ class PlayerInterface {
     public source: number,
     public charId: number | undefined,
     public stateId: string | undefined,
-  ) {
-    this.source = source
-    this.charId = charId
-    this.stateId = stateId
-  }
+  ) {}
 
-  async getAccount() {
-    console.warn(this)
+  getAccount = async () => {
     return this.charId ? GetCharacterAccount(this.charId) : null
   }
 }
