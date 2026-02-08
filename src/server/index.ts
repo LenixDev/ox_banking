@@ -14,7 +14,7 @@ import type {
   RawLogItem,
   Transaction,
 } from '../common/typings';
-import Bridge from './core/bridge';
+import GetGroups from './core/bridge';
 import { info } from '@trippler/tr_lib/shared';
 
 versionCheck('communityox/ox_banking');
@@ -34,7 +34,7 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
   if (!player.charId) return;
   
   try {
-    const groups = await Bridge.GetGroups()    
+    const groups = await GetGroups()    
     const accessAccounts = await oxmysql.rawExecute<Array<OxAccountUserMetadata & { grade: number, group: string }>>(
       `
       SELECT DISTINCT
@@ -210,7 +210,7 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
   if (!account) return;
 
   try {
-    const groups = await Bridge.GetGroups()
+    const groups = await GetGroups()
     const overview = await oxmysql.rawExecute<
       {
         day: string;
@@ -311,7 +311,7 @@ onClientCallback(
   ): Promise<AccessTableData> => {
     const account = await GetAccount(accountId);
     const hasPermission = await account?.playerHasPermission(playerId, 'manageUser');
-    const groups = await Bridge.GetGroups()
+    const groups = await GetGroups()
 
     if (!hasPermission) return;
 
@@ -565,7 +565,7 @@ onClientCallback(
   async (playerId, { accountId, filters }: { accountId: number; filters: LogsFilters }) => {
     const account = await GetAccount(accountId);
     const hasPermission = await account?.playerHasPermission(playerId, 'viewHistory');
-    const groups = await Bridge.GetGroups()
+    const groups = await GetGroups()
 
     if (!hasPermission) return;
 
@@ -725,7 +725,7 @@ onClientCallback(
   async (playerId, { accountId, filters }: { accountId: number; filters: InvoicesFilters }) => {
     const account = await GetAccount(accountId);
     const hasPermission = await account?.playerHasPermission(playerId, 'payInvoice');
-    const groups = await Bridge.GetGroups();
+    const groups = await GetGroups();
 
     if (!hasPermission) return;
 
