@@ -3,7 +3,7 @@ import { GetConnection, db } from "../database/modules"
 import { OxPlayer } from "../player/class"
 import { OxAccount } from "./class"
 import { CanPerformAction } from "./modules"
-import { Locale } from "../../../common/locales"
+import { Locale } from "@common/locales"
 
 const removeBalance = 'UPDATE accounts SET balance = balance - ? WHERE id = ?'
 const getBalance = 'SELECT balance FROM accounts WHERE id = ?'
