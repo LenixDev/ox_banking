@@ -1,5 +1,5 @@
-import { Dict, OxAccountMetadata, OxAccountRole, OxAccountPermissions } from "@communityox/ox_core"
-import { SelectAccount, SetAccountType, GetCharIdFromStateId, SelectAccountRole, UpdateAccountAccess } from "../database/modules"
+import { Dict, OxAccountMetadata, OxAccountRole, OxAccountPermissions, OxCreateInvoice } from "@communityox/ox_core"
+import { SelectAccount, SetAccountType, GetCharIdFromStateId, SelectAccountRole, UpdateAccountAccess, CreateInvoice } from "../database/modules"
 import { TransferAccountBalance } from "../types"
 import { ClassInterface } from "../classInterface"
 import { OxPlayer } from "../player/class"
@@ -49,8 +49,19 @@ class OxAccount extends ClassInterface {
   }
 
   async setShared() {
-    console.info(this.accountId)
     return SetAccountType(this.accountId, 'shared')
+  }
+  
+  /**
+   * Create an unpaid invoice on the account.
+   */
+  async createInvoice(data: Omit<OxCreateInvoice, 'fromAccount'>) {
+    const invoice = {
+      fromAccount: this.accountId,
+      ...data,
+    };
+
+    return await CreateInvoice(invoice);
   }
 
   /**
