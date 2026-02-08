@@ -127,6 +127,7 @@
   "invoice_confirm_payment": "Confirm your payment",
   "confirm_payment": "Confirm payment",
   "invoice_payment_to": "Payment to",
+  "invoice_payment": "Invoice Payment",
   "invoice_total": "Total",
   "invoice_paid_at": "Paid at: %s",
   "invoice_details_due_by": "Due by",
@@ -162,5 +163,6 @@
   "no_access": "No access",
   "something_went_wrong": "Unknown error, something went wrong",
   "account_id_not_exists": "No account with such id found",
-  "same_account_transfer": "Cannot transfer money to the same account"
+  "same_account_transfer": "Cannot transfer money to the same account",
+  "create_invoice": "Create a new invoice"
 }
