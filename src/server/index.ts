@@ -605,8 +605,6 @@ onClientCallback(
 
     queryParams.push(filters.page * 6);
 
-    console.log(queryParams)
-    console.log(queryWhere)
     const queryData = await oxmysql
       .rawExecute<Array<RawLogItem & {
         fromAccountId: number
@@ -698,7 +696,6 @@ onClientCallback(
         && groups?.[toAccountGroup]
       ) data.toAccountLabel = `${toAccountId} - ${toAccountGroup}`
     });
-    console.debug(queryData)
 
     const totalLogsCount = await oxmysql
       .prepare(
@@ -716,7 +713,6 @@ onClientCallback(
       )
       .catch((e) => console.log(e));
 
-    console.debug(totalLogsCount)
     return {
       numberOfPages: Math.ceil(totalLogsCount / 6),
       logs: queryData,
@@ -729,6 +725,7 @@ onClientCallback(
   async (playerId, { accountId, filters }: { accountId: number; filters: InvoicesFilters }) => {
     const account = await GetAccount(accountId);
     const hasPermission = await account?.playerHasPermission(playerId, 'payInvoice');
+    const groups = await Bridge.GetGroups();
 
     if (!hasPermission) return;
 
@@ -751,22 +748,33 @@ onClientCallback(
 
         if (search) {
           columnSearchString =
-            'AND (MATCH(a.label) AGAINST (? IN BOOLEAN MODE) OR MATCH(ai.message) AGAINST (? IN BOOLEAN MODE))';
-          queryParams.push(search, search);
+            'AND (a.label LIKE ? OR ai.message LIKE ?)';
+          queryParams.push(`%${search}%`, `%${search}%`);
         }
 
         queryJoins = `
         LEFT JOIN accounts a ON ai.fromAccount = a.id
-        LEFT JOIN characters c ON ai.actorId = c.charId
-        LEFT JOIN characters co ON (a.owner IS NOT NULL AND co.charId = a.owner)
-        LEFT JOIN ox_groups g ON (a.owner IS NULL AND g.name = a.group)
+        LEFT JOIN players p ON ai.actorId = p.id
+        LEFT JOIN players po ON (a.owner IS NOT NULL AND po.id = a.owner)
       `;
 
         query = `
           SELECT
             ai.id,
-            c.fullName as sentBy,
-            CONCAT(a.id, ' - ', IFNULL(co.fullName, g.label)) AS label,
+            NULLIF(TRIM(CONCAT(
+              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.firstname')), ''), 
+              ' ', 
+              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.lastname')), '')
+            )), '') as sentBy,
+            a.id as accountId,
+            NULLIF(TRIM(CONCAT(
+              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.firstname')), ''), 
+              ' ', 
+              IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.lastname')), '')
+            )), '') as ownerName,
+            a.owner,
+            a.group,
+            a.label as accountLabel,
             ai.amount,
             ai.message,
             UNIX_TIMESTAMP(ai.sentAt) AS sentAt,
@@ -783,24 +791,43 @@ onClientCallback(
         queryParams.push(accountId);
 
         if (search) {
-          columnSearchString = `AND (MATCH(c.fullName) AGAINST (? IN BOOLEAN MODE) OR MATCH(ai.message) AGAINST (? IN BOOLEAN MODE) OR MATCH(a.label) AGAINST (? IN BOOLEAN MODE))`;
-          queryParams.push(search, search, search);
+          columnSearchString = `AND (CONCAT(
+            IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.firstname')), ''), 
+            ' ', 
+            IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.lastname')), '')
+          ) LIKE ? OR ai.message LIKE ? OR a.label LIKE ?)`;
+          queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
         }
 
         queryJoins = `
         LEFT JOIN accounts a ON ai.fromAccount = a.id
-        LEFT JOIN characters c ON ai.payerId = c.charId
-        LEFT JOIN characters ca ON ai.actorId = ca.charId
-        LEFT JOIN characters co ON (a.owner IS NOT NULL AND co.charId = a.owner)
-        LEFT JOIN ox_groups g ON (a.owner IS NULL AND g.name = a.group)
+        LEFT JOIN players p ON ai.payerId = p.id
+        LEFT JOIN players pa ON ai.actorId = pa.id
+        LEFT JOIN players po ON (a.owner IS NOT NULL AND po.id = a.owner)
       `;
 
         query = `
         SELECT
           ai.id,
-          c.fullName as paidBy,
-          ca.fullName as sentBy,
-          CONCAT(a.id, ' - ', IFNULL(co.fullName, g.label)) AS label,
+          NULLIF(TRIM(CONCAT(
+            IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.firstname')), ''), 
+            ' ', 
+            IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.lastname')), '')
+          )), '') as paidBy,
+          NULLIF(TRIM(CONCAT(
+            IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pa.charinfo, '$.firstname')), ''), 
+            ' ', 
+            IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pa.charinfo, '$.lastname')), '')
+          )), '') as sentBy,
+          a.id as accountId,
+          NULLIF(TRIM(CONCAT(
+            IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.firstname')), ''), 
+            ' ', 
+            IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.lastname')), '')
+          )), '') as ownerName,
+          a.owner,
+          a.group,
+          a.label as accountLabel,
           ai.amount,
           ai.message,
           UNIX_TIMESTAMP(ai.sentAt) AS sentAt,
@@ -818,22 +845,36 @@ onClientCallback(
         queryParams.push(accountId);
 
         if (search) {
-          columnSearchString = `AND (MATCH(c.fullName) AGAINST (? IN BOOLEAN MODE) OR MATCH (ai.message) AGAINST (? IN BOOLEAN MODE) OR MATCH (a.label) AGAINST (? IN BOOLEAN MODE))`;
-          queryParams.push(search, search, search);
+          columnSearchString = `AND (CONCAT(
+            IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.firstname')), ''), 
+            ' ', 
+            IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.lastname')), '')
+          ) LIKE ? OR ai.message LIKE ? OR a.label LIKE ?)`;
+          queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
         }
 
         queryJoins = `
         LEFT JOIN accounts a ON ai.toAccount = a.id
-        LEFT JOIN characters c ON ai.actorId = c.charId
-        LEFT JOIN characters co ON (a.owner IS NOT NULL AND co.charId = a.owner)
-        LEFT JOIN ox_groups g ON (a.owner IS NULL AND g.name = a.group)
+        LEFT JOIN players p ON ai.actorId = p.id
+        LEFT JOIN players po ON (a.owner IS NOT NULL AND po.id = a.owner)
       `;
 
         query = `
         SELECT
           ai.id,
-          c.fullName as sentBy,
-          CONCAT(a.id, ' - ', IFNULL(co.fullName, g.label)) AS label,
+          NULLIF(TRIM(CONCAT(
+            IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.firstname')), ''), 
+            ' ', 
+            IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.lastname')), '')
+          )), '') as sentBy,
+          a.id as accountId,
+          NULLIF(TRIM(CONCAT(
+            IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.firstname')), ''), 
+            ' ', 
+            IFNULL(JSON_UNQUOTE(JSON_EXTRACT(po.charinfo, '$.lastname')), '')
+          )), '') as ownerName,
+          a.owner,
+          a.group,
           ai.amount,
           ai.message,
           UNIX_TIMESTAMP(ai.sentAt) AS sentAt,
@@ -864,7 +905,11 @@ onClientCallback(
     queryParams.push(filters.page * 6);
 
     const result = await oxmysql
-      .rawExecute(
+      .rawExecute<Array<Invoice & {
+        accountId: number
+        ownerName: string
+        group: string
+      }>>(
         `
     ${query}
     ${whereStatement}
@@ -875,6 +920,19 @@ onClientCallback(
         queryParams
       )
       .catch((e) => console.log(e));
+
+    // process labels in code
+    if (result) {
+      result.forEach(invoice => {
+        const { accountId, ownerName, group } = invoice;
+        
+        if (ownerName) {
+          invoice.label = `${accountId} - ${ownerName}`;
+        } else if (groups?.[group]) {
+          invoice.label = `${accountId} - ${group}`;
+        }
+      });
+    }
 
     queryParams.pop();
     const totalInvoices = await oxmysql
@@ -923,19 +981,6 @@ function getFormattedDates(date: DateRange) {
 }
 
 function sanitizeSearch(search: string) {
-  const str: string[] = [];
-
-  search.split(/\s+/).forEach((word) => {
-    str.push('+');
-    str.push(word.replace(/[\p{P}\p{C}]/gu, ''));
-    str.push('*');
-  });
-
-  if (str.length > 3) {
-    str.splice(2, 1);
-  }
-
-  search = str.join('');
-
-  return search === '+*' ? null : search;
+  const trimmed = search?.trim();
+  return trimmed ? trimmed : null;
 }
