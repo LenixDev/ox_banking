@@ -774,7 +774,7 @@ onClientCallback(
             )), '') as ownerName,
             a.owner,
             a.group,
-            a.label as accountLabel,
+            a.label,
             ai.amount,
             ai.message,
             UNIX_TIMESTAMP(ai.sentAt) AS sentAt,
@@ -827,7 +827,7 @@ onClientCallback(
           )), '') as ownerName,
           a.owner,
           a.group,
-          a.label as accountLabel,
+          a.label,
           ai.amount,
           ai.message,
           UNIX_TIMESTAMP(ai.sentAt) AS sentAt,
@@ -875,6 +875,7 @@ onClientCallback(
           )), '') as ownerName,
           a.owner,
           a.group,
+          a.label,
           ai.amount,
           ai.message,
           UNIX_TIMESTAMP(ai.sentAt) AS sentAt,
@@ -905,10 +906,11 @@ onClientCallback(
     queryParams.push(filters.page * 6);
 
     const result = await oxmysql
-      .rawExecute<Array<Invoice & {
+      .rawExecute<Array<unknown & {
         accountId: number
         ownerName: string
         group: string
+        label: string
       }>>(
         `
     ${query}
@@ -921,7 +923,7 @@ onClientCallback(
       )
       .catch((e) => console.log(e));
 
-    // process labels in code
+    // Process labels in code
     if (result) {
       result.forEach(invoice => {
         const { accountId, ownerName, group } = invoice;
