@@ -34,11 +34,6 @@ class OxPlayer extends ClassInterface {
     }
   }
 
-  async payInvoice(invoiceId: number) {
-    if (!this.charId) return
-    return await UpdateInvoice(invoiceId, this.charId)
-  }
-
   /** Get an instance of OxPlayer with the matching charId. */
   static getFromCharId(id: number) {
     return this.keys.charId[id]
@@ -53,6 +48,11 @@ class PlayerInterface {
 
   getAccount = async () => {
     return this.charId ? GetCharacterAccount(this.charId) : null
+  }
+
+  async payInvoice(invoiceId: number) {
+    if (!this.charId) return
+    return await UpdateInvoice(invoiceId, this.charId)
   }
 }
 
