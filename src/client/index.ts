@@ -1,9 +1,10 @@
 import { Config, LoadJsonFile, Locale } from '@common/.';
 import { OxAccountPermissions, OxAccountRole } from '@communityox/ox_core';
-import { cache, getLocales, hideTextUI, requestAnimDict, sleep, waitFor } from '@communityox/ox_lib/client';
+import lib, { cache, getLocales, hideTextUI, notify, requestAnimDict, sleep, triggerServerCallback, waitFor } from '@communityox/ox_lib/client';
 import type { Character } from '../common/typings';
 import { SendTypedNUIMessage, serverNuiCallback } from './utils';
 
+const enableInvoicingByCommand = true
 let hasLoadedUi = false;
 let isUiOpen = false;
 let isATMopen = false;
@@ -141,6 +142,35 @@ if (Config.UseOxTarget) {
     createBankBlip(bank.coords);
   });
 } else banks.forEach(({ coords }) => createBankBlip(coords));
+
+if (enableInvoicingByCommand) {
+  onNet('ox_banking/client/createInvoice', async () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const input = await lib.inputDialog(Locale('create_invoice'), [
+      { type: 'number', label: Locale('account_number'), required: true },
+      { type: 'number', label: Locale('amount'), required: true },
+      { type: 'textarea', label: Locale('message') },
+      { 
+        type: 'date', 
+        label: Locale('invoice_pick_due_date'), 
+        required: true, 
+        min: tomorrow.toLocaleDateString()
+      },
+    ], {})
+    if (!input) return
+    const { success, message } = await triggerServerCallback<{ success: boolean, message: string }>('ox_banking/server/createInvoice', 5000, {
+      toAccount: input[0],
+      amount: input[1],
+      message: input[2],
+      dueDate: Math.floor(Number(input[3]) / 1000),
+    }) as { success: boolean, message: string };
+    if (!success) notify({
+      title: message,
+      type: 'error'
+    })
+  })
+}
 
 RegisterNuiCallback('exit', async (_: any, cb: Function) => {
   cb(1);
