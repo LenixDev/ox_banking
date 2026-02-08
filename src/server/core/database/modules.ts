@@ -2,8 +2,10 @@ import { pool } from './pool'
 import { waitFor } from '@communityox/ox_lib'
 import { OkPacket } from '../types'
 import type { QueryOptions } from 'mariadb'
-import { OxAccountMetadata, OxAccountUserMetadata } from '@communityox/ox_core'
+import { OxAccountMetadata, OxAccountUserMetadata, OxCreateInvoice } from '@communityox/ox_core'
 import { Connection } from './class'
+import { OxPlayer } from '../player/class'
+import { OxAccount } from '../accounts/class'
 
 const selectAccountRole = 'SELECT role FROM accounts_access WHERE accountId = ? AND charId = ?'
 
@@ -18,6 +20,9 @@ const db = {
   },
   async column<T>(query: string | QueryOptions, values?: any[]) {
     return db.scalar(await db.execute<T[]>(query, values)) as T | null
+  },
+  async insert(query: string | QueryOptions, values?: any[]) {
+    return (await db.execute<OkPacket>(query, values))?.insertId;
   },
   async update(query: string | QueryOptions, values?: any[]) {
     return (await db.execute<OkPacket>(query, values))?.affectedRows
@@ -94,6 +99,43 @@ const UpdateAccountAccess = async (
   return { success: true }
 }
 
+const CreateInvoice = async ({
+  actorId,
+  fromAccount,
+  toAccount,
+  amount,
+  message,
+  dueDate,
+}: OxCreateInvoice): Promise<{ success: boolean; message?: string }> => {
+  if (isNaN(amount)) return { success: false, message: 'amount_not_number' };
+
+  if (amount <= 0) return { success: false, message: 'invalid_amount' };
+
+  if (actorId) {
+    const player = OxPlayer.getFromCharId(actorId);
+
+    if (!player?.charId) return { success: false, message: 'no_charid' };
+
+    const account = await OxAccount.get(fromAccount);
+    const hasPermission = await account?.playerHasPermission(player.source as number, 'sendInvoice');
+
+    if (!hasPermission) return { success: false, message: 'no_permission' };
+  }
+
+  const targetAccount = await OxAccount.get(toAccount);
+
+  if (!targetAccount) return { success: false, message: 'no_target_account' };
+
+  const success = await db.insert(
+    'INSERT INTO accounts_invoices (`actorId`, `fromAccount`, `toAccount`, `amount`, `message`, `dueDate`) VALUES (?, ?, ?, ?, ?, ?)',
+    [actorId, fromAccount, toAccount, amount, message, dueDate],
+  );
+
+  if (!success) return { success: false, message: 'invoice_insert_error' };
+
+  return { success: true };
+}
+
 export { 
   db,
   getScalar,
@@ -103,5 +145,6 @@ export {
   GetCharIdFromStateId,
   SelectDefaultAccountId,
   SelectAccountRole,
-  UpdateAccountAccess
+  UpdateAccountAccess,
+  CreateInvoice
 }
