@@ -5,7 +5,6 @@
 import { Dict } from "@communityox/ox_core"
 import { QBoxPlayer } from "./types"
 import { CreateNewAccount } from "./accounts/modules"
-import { fatal } from "@trippler/tr_lib/shared"
 
 const ON_PLAYER_LOADED = 'QBCore:Server:OnPlayerLoaded'
 
@@ -27,23 +26,8 @@ class ClassInterface {
     }
 
     if (this.name === 'OxPlayer') {
-      setTimeout(async () => {
-        const { OxPlayer } = await import('./player/class')
-        const { GetPlayer } = await import('.')
 
-        OxPlayer.add(1, new OxPlayer(1, 1, "X3KNMOT7"))
-
-        const { charId, getAccount } = GetPlayer(1);
-        if (!charId) return;
-
-        if (!await getAccount()) {
-          await CreateNewAccount(charId, 'Personal', true);
-          const createdAccount = await getAccount();
-          if (!createdAccount) fatal(`Failed to create account for player ${charId}.`)
-        }
-      }, 1000)
-
-      DEV: onNet(ON_PLAYER_LOADED, async () => {
+      onNet(ON_PLAYER_LOADED, async () => {
         const src = source
         const { PlayerData: {
           cid, citizenid
@@ -61,7 +45,7 @@ class ClassInterface {
         if (!await getAccount()) {
           await CreateNewAccount(charId, 'Personal', true);
           const createdAccount = await getAccount();
-          if (!createdAccount) fatal(`Failed to create account for player ${charId}.`)
+          if (!createdAccount) throw new Error(`Failed to create account for player ${charId}.`)
         }
       })
     }

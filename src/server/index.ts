@@ -19,7 +19,6 @@ import type {
   Transaction,
 } from '../common/typings';
 import GetGroups from './core/bridge';
-import { info } from '@trippler/tr_lib/shared';
 
 versionCheck('communityox/ox_banking');
 
@@ -287,7 +286,6 @@ onClientCallback('ox_banking:getDashboardData', async (playerId): Promise<Dashbo
       if (fullName) invoice.label = `${label} - ${fullName}`
       // set label if the account is a group account, checking if the group exists ;)
       else if (groups?.[group]) invoice.label = `${label} - ${group}`
-      else info('Something you need to double check')
     })
 
     return {
