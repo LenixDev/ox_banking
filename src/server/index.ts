@@ -20,9 +20,9 @@ import type {
 } from '../common/typings';
 import GetGroups from './core/bridge';
 
-versionCheck('communityox/ox_banking');
+versionCheck('lenixdev/ox_banking');
 
-const coreDepCheck: true | [false, string] = checkDependency('ox_core', '1.1.0');
+const coreDepCheck: true | [false, string] = checkDependency('qbx_core', '1.23.0');
 const accountRolesFallback = GetConvar('ox_banking:fallback_roles', 'manager,viewer').split(',') as OxAccountRole[];
 const validRoles: OxAccountRole[] = ['owner', 'manager', 'contributor', 'viewer'];
 
@@ -37,8 +37,7 @@ if (!validRoles.includes(accountRolesFallback[0]) || !validRoles.includes(accoun
 
 if (coreDepCheck !== true) {
   setInterval(() => {
-    // TODO
-    // console.error(coreDepCheck[1]);
+    console.error(coreDepCheck[1]);
   }, 1000);
 }
 
