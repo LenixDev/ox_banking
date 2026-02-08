@@ -1,3 +1,7 @@
+/**
+ * @copyright Adapted by Lenix <https://github.com/lenixdev> - Original: ox_core by CommunityOx
+*/
+
 import { pool } from './pool'
 import { waitFor } from '@communityox/ox_lib'
 import { OkPacket } from '../types'

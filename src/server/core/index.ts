@@ -1,3 +1,7 @@
+/**
+ * @copyright Adapted by Lenix <https://github.com/lenixdev> - Original: ox_core by CommunityOx
+*/
+
 import { GetCharIdFromStateId, SelectDefaultAccountId } from './database/modules'
 import { OxAccountMetadata, OxAccountPermissions, OxAccountRole } from '@communityox/ox_core'
 import { TransferAccountBalance } from './types'

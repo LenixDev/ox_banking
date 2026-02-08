@@ -89,3 +89,6 @@ e.g.
   },
 },
 ```
+
+## Acknowledge
+- Adapted by: Lenix (https://github.com/lenixdev)

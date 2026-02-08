@@ -1,3 +1,7 @@
+/**
+ * @copyright Adapted by Lenix <https://github.com/lenixdev> - Original: ox_core by CommunityOx
+*/
+
 import { Dict } from "@communityox/ox_core"
 import { QBoxPlayer } from "./types"
 import { CreateNewAccount } from "./accounts/modules"

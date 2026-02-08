@@ -1,3 +1,7 @@
+/**
+ * @copyright Adapted by Lenix <https://github.com/lenixdev> - Original: ox_core by CommunityOx
+*/
+
 import { OxCreateInvoice } from '@communityox/ox_core'
 import { GetPlayer } from '.'
 import { OxAccount } from './accounts/class'

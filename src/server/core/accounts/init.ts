@@ -1,3 +1,7 @@
+/**
+ * @copyright Adapted by Lenix <https://github.com/lenixdev> - Original: ox_core by CommunityOx
+*/
+
 import { OxAccountPermissions, OxAccountRole } from "@communityox/ox_core"
 import { db } from "../database/modules"
 import { OxAccountMetadataRow } from "../types"

@@ -1,3 +1,7 @@
+/**
+ * @copyright Adapted by Lenix <https://github.com/lenixdev> - Original: ox_core by CommunityOx
+*/
+
 import { QboxGangs, QboxGroups, QboxJobs } from "./types"
 
 const GetJobs = (): Promise<QboxJobs> => exports.qbx_core.GetJobs()

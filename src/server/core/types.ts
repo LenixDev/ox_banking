@@ -1,3 +1,7 @@
+/**
+ * @copyright Adapted by Lenix <https://github.com/lenixdev> - Original: ox_core by CommunityOx
+*/
+
 import { Dict, OxAccountPermissions, OxAccountRole } from "@communityox/ox_core"
 
 interface GroupGradeData {

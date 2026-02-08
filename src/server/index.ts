@@ -1,3 +1,7 @@
+/**
+ * @copyright port by Lenix - Original: CommunityOx
+*/
+
 import type { OxAccountRole, OxAccountUserMetadata } from '@communityox/ox_core';
 import { CreateAccount, GetAccount, GetCharacterAccount, GetPlayer } from './core';
 import { onClientCallback, versionCheck, checkDependency } from '@communityox/ox_lib/server';

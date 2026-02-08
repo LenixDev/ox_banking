@@ -1,3 +1,7 @@
+/**
+ * @copyright Adapted by Lenix <https://github.com/lenixdev> - Original: ox_core by CommunityOx
+*/
+
 import { OxAccountRole } from "@communityox/ox_core"
 import { GetConnection, db } from "../database/modules"
 import { OxPlayer } from "../player/class"

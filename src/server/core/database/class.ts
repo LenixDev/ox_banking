@@ -1,3 +1,7 @@
+/**
+ * @copyright Adapted by Lenix <https://github.com/lenixdev> - Original: ox_core by CommunityOx
+*/
+
 import { PoolConnection, QueryOptions } from "mariadb/*"
 import { MySqlRow, OkPacket } from "../types"
 import { getScalar } from "./modules"
