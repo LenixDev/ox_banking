@@ -1,9 +1,9 @@
 import { OxAccountRole } from "@communityox/ox_core"
-import locales from "../common"
 import { GetConnection, db } from "../database/modules"
 import { OxPlayer } from "../player/class"
 import { OxAccount } from "./class"
 import { CanPerformAction } from "./modules"
+import { Locale } from "../../../common/locales"
 
 const removeBalance = 'UPDATE accounts SET balance = balance - ? WHERE id = ?'
 const getBalance = 'SELECT balance FROM accounts WHERE id = ?'
@@ -51,7 +51,7 @@ const PerformTransaction = async (
         fromId,
         toId,
         amount,
-        message ?? locales('transfer'),
+        message ?? Locale('transfer'),
         note,
         fromBalance - amount,
         toBalance + amount,
@@ -114,7 +114,7 @@ const WithdrawMoney = async (
     accountId,
     null,
     amount,
-    message ?? locales('withdraw'),
+    message ?? Locale('withdraw'),
     note,
     balance - amount,
     null,
@@ -176,7 +176,7 @@ const DepositMoney = async (
     null,
     accountId,
     amount,
-    message ?? locales('deposit'),
+    message ?? Locale('deposit'),
     note,
     null,
     balance + amount,
@@ -235,7 +235,7 @@ const UpdateBalance = async (
       message: 'insufficient_balance',
     }
 
-  !message && (message = locales(action === 'add' ? 'deposit' : 'withdraw'))
+  !message && (message = Locale(action === 'add' ? 'deposit' : 'withdraw'))
 
   const didUpdate =
     (await conn.update(addTransaction, [
@@ -287,7 +287,7 @@ const UpdateInvoice = async (
     invoice.amount,
     'remove',
     false,
-    locales('invoice_payment'),
+    Locale('invoice_payment'),
     undefined,
     charId,
   )
@@ -299,7 +299,7 @@ const UpdateInvoice = async (
     invoice.amount,
     'add',
     false,
-    locales('invoice_payment'),
+    Locale('invoice_payment'),
     undefined,
     charId,
   )
