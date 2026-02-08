@@ -12,7 +12,6 @@ import './database/init'
 import './accounts/init'
 import './init'
 
-// TODO: test when no account found (not created with char creation)
 const CreateAccount = async (owner: number | string, label: string) => {
   const accountId = await CreateNewAccount(owner, label)
   const account = await OxAccount.get(accountId)

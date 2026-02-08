@@ -33,7 +33,7 @@ class ClassInterface {
           cid, citizenid
         } }: QBoxPlayer = await exports.qbx_core.GetPlayer(src)
 
-        // Dynamic import to avoid circular dependency
+        /** Dynamic import to avoid circular dependency */
         const { OxPlayer } = await import('./player/class')
         const { GetPlayer } = await import('./index')
         
