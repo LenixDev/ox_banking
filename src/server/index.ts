@@ -23,7 +23,17 @@ import GetGroups from './core/bridge';
 versionCheck('communityox/ox_banking');
 
 const coreDepCheck: true | [false, string] = checkDependency('ox_core', '1.1.0');
-const accountRolesFallback: OxAccountRole[] = ['manager', 'viewer'] as const
+const accountRolesFallback = GetConvar('ox_banking:fallback_roles', 'manager,viewer').split(',') as OxAccountRole[];
+const validRoles: OxAccountRole[] = ['owner', 'manager', 'contributor', 'viewer'];
+
+if (accountRolesFallback.length !== 2)
+  throw new Error('ox_banking:fallback_roles convar must be a comma separated list of 2 roles');
+
+if (accountRolesFallback[0] === accountRolesFallback[1])
+  throw new Error('ox_banking:fallback_roles convar must have 2 different roles');
+
+if (!validRoles.includes(accountRolesFallback[0]) || !validRoles.includes(accountRolesFallback[1]))
+  throw new Error('ox_banking:fallback_roles convar must contain valid roles: owner, manager, contributor, or viewer');
 
 if (coreDepCheck !== true) {
   setInterval(() => {
