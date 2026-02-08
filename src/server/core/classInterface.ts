@@ -23,9 +23,9 @@ class ClassInterface {
     }
 
     if (this.name === 'OxPlayer') {
-      (async () => {
+      setTimeout(async () => {
         const { OxPlayer } = await import('./player/class')
-        const { GetPlayer } = await import('./index')
+        const { GetPlayer } = await import('.')
 
         OxPlayer.add(1, new OxPlayer(1, 1, "X3KNMOT7"))
 
@@ -37,7 +37,7 @@ class ClassInterface {
           const createdAccount = await getAccount();
           if (!createdAccount) fatal(`Failed to create account for player ${charId}.`)
         }
-      })()
+      }, 1000)
 
       DEV: onNet(ON_PLAYER_LOADED, async () => {
         const src = source
