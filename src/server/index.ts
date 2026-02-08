@@ -1,5 +1,5 @@
 import type { OxAccountRole, OxAccountUserMetadata } from '@communityox/ox_core';
-import { CreateAccount, GetAccount, GetCharacterAccount, GetPlayer } from './lib';
+import { CreateAccount, GetAccount, GetCharacterAccount, GetPlayer } from './core';
 import { onClientCallback, versionCheck, checkDependency } from '@communityox/ox_lib/server';
 import { oxmysql } from '@communityox/oxmysql';
 import type { DateRange } from 'react-day-picker';
@@ -14,7 +14,7 @@ import type {
   RawLogItem,
   Transaction,
 } from '../common/typings';
-import Bridge from './lib/bridge';
+import Bridge from './core/bridge';
 import { info } from '@trippler/tr_lib/shared';
 
 versionCheck('communityox/ox_banking');
