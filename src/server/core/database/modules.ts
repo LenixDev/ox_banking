@@ -6,7 +6,8 @@ import { OxAccountMetadata, OxAccountUserMetadata, OxCreateInvoice } from '@comm
 import { Connection } from './class'
 import { OxPlayer } from '../player/class'
 import { OxAccount } from '../accounts/class'
-
+import { Locale } from '@common/locales'
+  
 const selectAccountRole = 'SELECT role FROM accounts_access WHERE accountId = ? AND charId = ?'
 
 const SelectAccounts = async (column: 'owner' | 'group' | 'id', id: number | string) => {
@@ -127,8 +128,8 @@ const CreateInvoice = async ({
   if (!targetAccount) return { success: false, message: 'no_target_account' };
 
   const success = await db.insert(
-    'INSERT INTO accounts_invoices (`actorId`, `fromAccount`, `toAccount`, `amount`, `message`, `dueDate`) VALUES (?, ?, ?, ?, ?, ?)',
-    [actorId, fromAccount, toAccount, amount, message, dueDate],
+    'INSERT INTO accounts_invoices (`actorId`, `fromAccount`, `toAccount`, `amount`, `message`, `dueDate`) VALUES (?, ?, ?, ?, ?, FROM_UNIXTIME(?))',
+    [actorId, fromAccount, toAccount, amount, message || Locale('no_message'), dueDate],
   );
 
   if (!success) return { success: false, message: 'invoice_insert_error' };
