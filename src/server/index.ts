@@ -20,6 +20,7 @@ import { info } from '@trippler/tr_lib/shared';
 versionCheck('communityox/ox_banking');
 
 const coreDepCheck: true | [false, string] = checkDependency('ox_core', '1.1.0');
+const accountRolesFallback: OxAccountRole[] = ['manager', 'viewer'] as const
 
 if (coreDepCheck !== true) {
   setInterval(() => {
@@ -74,16 +75,13 @@ onClientCallback('ox_banking:getAccounts', async (playerId): Promise<Account[]> 
     accessAccounts.forEach(account => {
       const { role, group: accountGroup, grade, ownerName } = account;
       // determine role
-      const group = groups[accountGroup]
       if (!role && accountGroup && grade !== null) {
-        const groupGrade = group?.grades?.[grade];
-
-        if (groupGrade) account.role = groupGrade.accountRole || (groupGrade.isboss ? 'manager' : 'viewer');
-      } else info('Something you need to double check')
+        const groupGrade = groups?.[accountGroup]?.grades?.[grade];
+        if (groupGrade) account.role = groupGrade.accountRole || (groupGrade.isboss ? accountRolesFallback[0] : accountRolesFallback[1]);
+      }
       
       // set ownerName for groups
-      if (!ownerName && (group)) account.ownerName = account.group;
-      else info('Something you need to double check')
+      if (!ownerName && accountGroup && groups?.[accountGroup]) account.ownerName = accountGroup;
     });
 
     // filter out invalid group accounts (matches old gg.accountRole IS NOT NULL logic)
@@ -313,6 +311,7 @@ onClientCallback(
   ): Promise<AccessTableData> => {
     const account = await GetAccount(accountId);
     const hasPermission = await account?.playerHasPermission(playerId, 'manageUser');
+    const groups = await Bridge.GetGroups()
 
     if (!hasPermission) return;
 
@@ -324,30 +323,36 @@ onClientCallback(
     const queryParams: any[] = [accountId];
 
     if (wildcard) {
-      searchStr += 'AND MATCH(c.fullName) AGAINST (? IN BOOLEAN MODE)';
-      queryParams.push(wildcard);
+      searchStr += `AND CONCAT(
+        IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.firstname')), ''), 
+        ' ', 
+        IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.lastname')), '')
+      ) LIKE ?`;
+      queryParams.push(`%${wildcard}%`);
     }
 
     if (accountGroup) {
       const params: any[] = [accountGroup];
 
       const usersQuery = `
-        SELECT c.stateId, c.fullName AS name, gg.accountRole AS role FROM character_groups cg
-        LEFT JOIN accounts a ON cg.name = a.group
-        LEFT JOIN characters c ON c.charId = cg.charId
-        LEFT JOIN ox_group_grades gg ON (cg.name = gg.group AND cg.grade = gg.grade)
-        WHERE cg.name = ? ${searchStr}
+        SELECT p.citizenid As stateId, NULLIF(TRIM(CONCAT(
+          IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.firstname')), ''), 
+            ' ', 
+            IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.lastname')), '')
+          )), '') AS name, NULL AS role, pg.group, pg.grade FROM player_groups pg
+        LEFT JOIN accounts a ON pg.group = a.group
+        LEFT JOIN players p ON p.citizenid = pg.citizenid
+        WHERE pg.group = ? ${searchStr}
         ORDER BY role DESC
         LIMIT 12
         OFFSET ?
       `;
 
       const countQuery = `
-        SELECT COUNT(*) FROM character_groups cg
-        LEFT JOIN accounts a ON cg.name = a.group
-        LEFT JOIN characters c ON c.charId = cg.charId
-        LEFT JOIN ox_group_grades gg ON (cg.name = gg.group AND cg.grade = gg.grade)
-        WHERE cg.name = ?
+        SELECT COUNT(*) FROM player_groups pg
+        LEFT JOIN accounts a ON pg.group = a.group
+        LEFT JOIN players p ON p.citizenid = pg.citizenid
+        WHERE pg.group = ?
       `;
 
       const count = await oxmysql.prepare(countQuery, params);
@@ -355,7 +360,16 @@ onClientCallback(
       if (wildcard) params.push(wildcard);
       params.push(page * 12);
 
-      const users = await oxmysql.rawExecute<AccessTableUser[]>(usersQuery, params);
+      const users = await oxmysql.rawExecute<Array<AccessTableUser & { role: any, group: string, grade: number }>>(usersQuery, params);
+      users.forEach(user => {
+        const { role, group, grade } = user
+        if (!role) {
+          const playerGrade = groups?.[group]?.grades?.[grade]
+          if (playerGrade) {
+            user.role = playerGrade.accountRole ?? (playerGrade.isboss ? accountRolesFallback[0] : accountRolesFallback[1])
+          }
+        }
+      });
 
       return {
         numberOfPages: count,
@@ -364,7 +378,7 @@ onClientCallback(
     }
 
     const usersCount = await oxmysql.prepare<number>(
-      `SELECT COUNT(*) FROM \`accounts_access\` aa LEFT JOIN characters c ON c.charId = aa.charId WHERE accountId = ? ${searchStr}`,
+      `SELECT COUNT(*) FROM \`accounts_access\` aa LEFT JOIN players p ON p.id = aa.charId WHERE accountId = ? ${searchStr}`,
       queryParams
     );
 
@@ -373,8 +387,12 @@ onClientCallback(
     const users = usersCount
       ? await oxmysql.rawExecute<AccessTableData['users']>(
           `
-      SELECT c.stateId, a.role, c.fullName AS \`name\` FROM \`accounts_access\` a
-      LEFT JOIN \`characters\` c ON c.charId = a.charId
+      SELECT p.citizenid as stateId, a.role, NULLIF(TRIM(CONCAT(
+        IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.firstname')), ''), 
+          ' ', 
+          IFNULL(JSON_UNQUOTE(JSON_EXTRACT(p.charinfo, '$.lastname')), '')
+        )), '') AS \`name\` FROM \`accounts_access\` a
+      LEFT JOIN \`players\` p ON p.id = a.charId
       WHERE a.accountId = ?
       ${searchStr}
       ORDER BY a.role DESC

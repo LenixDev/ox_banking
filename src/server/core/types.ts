@@ -4,7 +4,7 @@ interface GroupGradeData {
   name: string
   isboss: boolean
   bankAuth: boolean
-  accountRole: OxAccountRole
+  accountRole?: OxAccountRole
 }
 
 interface GroupStandards<GradeData> {
