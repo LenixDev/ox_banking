@@ -49,8 +49,20 @@ A complete banking system for FiveM for the [ox_core](https://github.com/communi
 ```bash
 npm i -g bun # the last `npm` command you'll ever need
 ```
+or
+[visit](https://bun.com/docs/installation#installation)
 
-2. If you want to use precise account roles, you can add to each grade a role, otherwise the system with use `isboss` to determine whether to give the grade a `viewer` role or a `manager` role
+2. Download the packages
+```bash
+bun i
+```
+3. Build the script
+```bash
+bun run build
+```
+
+
+2. If you want to use precise account roles, you can add to each grade a role, otherwise the system with use `isboss` to determine whether to give the grade a `viewer` role or a `manager` role or a custom fallback based on your preferenses on the config variables
 e.g.
 ```lua
 ['police'] = {
