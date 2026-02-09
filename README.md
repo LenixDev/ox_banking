@@ -64,6 +64,7 @@ bun run build
 
 2. If you want to use precise account roles, you can add to each grade a role, otherwise the system with use `isboss` to determine whether to give the grade a `viewer` role or a `manager` role or a custom fallback based on your preferenses on the server config variables
 e.g.
+- shared/jobs.lua
 ```lua
 ['police'] = {
   label = 'LSPD',
@@ -100,6 +101,11 @@ e.g.
     },
   },
 },
+```
+
+- server.cfg
+```cfg
+set ox_banking:fallback_roles "manager,viewer"
 ```
 
 ## Acknowledge
